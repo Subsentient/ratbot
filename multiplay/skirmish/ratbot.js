@@ -103,6 +103,125 @@ const Limit_CC = 1;
 ///Fixes a bug.
 const DROID_CYBORG_CONSTRUCT = 10;
 
+
+function ChooseEnemy()
+{
+	var Enemies = [];
+	
+	
+	//Enumerate all enemies we have.
+	for (var Inc = 0; Inc < maxPlayers; ++Inc)
+	{
+		var EnemyStructs = enumCriticalStructs(Inc);
+		var EnemyDroids = enumDroid(Inc);
+		
+		var OurDroids = enumDroid(me, DROID_ANY);
+		
+		if ((EnemyDroids.length || EnemyStructs.length) && !allianceExistsBetween(me, Inc) &&
+			Inc != me && droidCanReach(OurDroids[0], startPositions[Inc].x, startPositions[Inc].y))
+		{
+			Enemies.push(Inc);
+		}
+	}
+	
+	if (Enemies.length == 0) return null;
+	
+	
+	//Pick the closest one.
+	var ClosestDistance = Infinity;
+	var ClosestEnemy = null;
+	
+	for (Enemy in Enemies)
+	{
+		var NewDistance = distBetweenTwoPoints(startPositions[me].x, startPositions[me].y, startPositions[Enemies[Enemy]].x, startPositions[Enemies[Enemy]].y);
+		if (ClosestDistance > NewDistance)
+		{
+			ClosestDistance = NewDistance;
+			ClosestEnemy = Enemies[Enemy];
+		}
+	}
+	
+	return ClosestEnemy;
+}
+
+function enumCriticalStructs(Player)
+{
+	var Structs = enumStruct(Player);
+	
+	var NonDefenseStructs = [];
+	
+	for (S in Structs)
+	{
+		switch (Structs[S].stattype)
+		{
+			case FACTORY:
+			case RESEARCH_LAB:
+			case CYBORG_FACTORY:
+			case VTOL_FACTORY:
+				NonDefenseStructs.push(Structs[S]);
+				break;
+			default:
+				break;
+		}
+	}
+	
+	return NonDefenseStructs;
+}
+
+function PerformAttack()
+{
+	var Droids = enumDroid(me, DROID_ANY);
+	
+	
+	//Only attack when we got all possible units.
+	if (Droids.length != 150) return;
+	
+	
+	//Find an enemy to pwn
+	var Target = ChooseEnemy();
+	
+	if (Target == null) return;
+	
+	
+	var EnemyDroids = enumDroid(Target, DROID_ANY);
+	
+	var NonDefenseStructs = enumCriticalStructs(Target);
+	
+	if (NonDefenseStructs.length < 8 && EnemyDroids.length < 30)
+	{ ///They are almost dead, finish them off.
+		for (Droid in Droids)
+		{
+			var AttackStructure = Math.floor(Math.random()*2); //Boolean
+			
+			if (Droids[Droid].droidType == DROID_CONSTRUCT || Droids[Droid].droidType == DROID_CYBORG_CONSTRUCT) continue;
+			
+			if (AttackStructure)
+			{
+				if (!NonDefenseStructs.length) continue;
+				var Element = Math.floor(Math.random() * NonDefenseStructs.length);
+				orderDroidObj(Droids[Droid], DORDER_ATTACK, NonDefenseStructs[Element]);
+			}
+			else
+			{
+				if (!EnemyDroids.length) continue;
+				var Element = Math.floor(Math.random() * EnemyDroids.length);
+				orderDroidObj(Droids[Droid], DORDER_ATTACK, EnemyDroids[Element]);
+			}
+		}
+	}
+	else
+	{ ///They got an army, just send a fuckton to their base.
+		for (Droid in Droids)
+		{
+			if (Droids[Droid].droidType == DROID_CONSTRUCT || Droids[Droid].droidType == DROID_CYBORG_CONSTRUCT)
+			{
+				continue;
+			}
+			orderDroidLoc(Droids[Droid], DORDER_MOVE, startPositions[Target].x, startPositions[Target].y);
+		}
+	}
+}
+
 function MakeBorgs()
 {
 	var BorgFacs = enumStruct(me, baseStruct_BorgFac);
@@ -496,6 +615,7 @@ function eventStartLevel()
 	setTimer("MakeTanks", 500);
 	setTimer("MakeBorgs", 500);
 	setTimer("WorkOnBase", 500);
+	setTimer("PerformAttack", 20000); //Every 20 secs.
 }
 
 
