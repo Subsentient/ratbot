@@ -42,9 +42,10 @@ const Module_Generator = "A0PowMod1";
 const OilPool = "OilResource";
 
 ///Research path.
-var ResearchPath = ["R-Vehicle-Prop-Halftracks", "R-Vehicle-Body05", "R-Struc-Research-Upgrade09","R-Wpn-Cannon4AMk1","R-Wpn-RailGun03",
-					"R-Vehicle-Metals02", "R-Wpn-Cannon6TwinAslt", "R-Cyborg-Metals04", "R-Cyborg-Hvywpn-Acannon", "R-Vehicle-Body09",
-					"R-Cyborg-Metals09","R-Vehicle-Metals09", "R-Struc-Factory-Upgrade09", "R-Struc-Power-Upgrade03a", "R-Wpn-MG4" ];
+var ResearchPath = ["R-Vehicle-Prop-Halftracks", "R-Vehicle-Body05", "R-Struc-Research-Upgrade09","R-Wpn-Cannon4AMk1",
+					"R-Wpn-Cannon6TwinAslt", "R-Wpn-RailGun03",	"R-Vehicle-Metals02", "R-Cyborg-Metals04",
+					"R-Cyborg-Hvywpn-Acannon", "R-Cyborg-Hvywpn-RailGunner", "R-Vehicle-Body09","R-Cyborg-Metals09","R-Vehicle-Metals09",
+					"R-Struc-Factory-Upgrade09", "R-Struc-Power-Upgrade03a", "R-Wpn-MG-ROF01" ];
 
 
 
@@ -63,6 +64,7 @@ var TankTemplates = new Array(
 				[body_Mantis, prop_Tracks, "RailGun2Mk1"],
 				[body_Tiger, prop_Halftracks, "RailGun1Mk1"],
 				[body_Mantis, prop_Tracks, "RailGun1Mk1"],
+				[body_Python, prop_Halftracks, "RailGun1Mk1"],
 				[body_Mantis, prop_Tracks, "Cannon6TwinAslt"],
 				[body_Python, prop_Halftracks, "Cannon6TwinAslt"],
 				[body_Mantis, prop_Halftracks, "Cannon375mmMk1"],
