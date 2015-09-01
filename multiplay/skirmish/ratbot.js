@@ -107,11 +107,44 @@ const Limit_CC = 1;
 
 ///How many tiles away an oil has to be before we will NOT build it.
 const MaxOilDistance = 20;
-
+const MaxWatchingDistance = 35;
 
 ///Fixes a bug.
 const DROID_CYBORG_CONSTRUCT = 10;
 
+function WatchForEnemies()
+{
+	for (var Inc = 0; Inc < maxPlayers; ++Inc)
+	{
+		if (allianceExistsBetween(me, Inc) || Inc == me) continue;
+		
+		var EnemyDroids = enumDroid(Inc, DROID_ANY);
+		
+		if (!EnemyDroids) continue;
+		
+		for (D in EnemyDroids)
+		{
+			if (MaxWatchingDistance > distBetweenTwoPoints(startPositions[me].x, startPositions[me].y, EnemyDroids[D].x, EnemyDroids[D].y))
+			{ //ALERT! Someone is near us!
+				var Droids = enumDroid(me, DROID_ANY);
+				
+				if (!Droids) return;
+				
+				if (!droidCanReach(Droids[0], EnemyDroids[D].x, EnemyDroids[D].y)) continue;
+				
+				for (D2 in Droids)
+				{
+					if (Droids[D2].droidType == DROID_CONSTRUCT || Droids[D2].droidType == DROID_CYBORG_CONSTRUCT) continue;
+					
+					orderDroidLoc(Droids[D2], DORDER_MOVE, EnemyDroids[D].x, EnemyDroids[D].y);
+				}
+				return;
+			}
+		}
+		
+		//We don't watch for structures, because that's expensive and we can simply respond to arty attacks.
+	}
+}
 
 function ChooseEnemy()
 {
@@ -746,6 +779,7 @@ function eventStartLevel()
 	setTimer("MakeTanks", 500);
 	setTimer("MakeBorgs", 500);
 	setTimer("WorkOnBase", 500);
+	setTimer("WatchForEnemies", 500);
 	setTimer("PerformAttack", 20000); //Every 20 secs.
 }
 
