@@ -41,6 +41,9 @@ const Module_Generator = "A0PowMod1";
 
 const OilPool = "OilResource";
 
+const OilTrucks; //The numeric group ID.
+const NonOilTrucks; //Hack because I can't find another way to un-group trucks.
+
 ///Research path.
 var ResearchPath = ["R-Vehicle-Prop-Halftracks", "R-Vehicle-Body05", "R-Struc-Research-Upgrade09","R-Wpn-Cannon4AMk1",
 					"R-Wpn-Cannon6TwinAslt", "R-Wpn-RailGun03",	"R-Vehicle-Metals02", "R-Cyborg-Metals04",
@@ -285,6 +288,9 @@ function FindTrucks(Requested, StealOk)
 	
 	for (var Inc = 0; Inc < Known.length; ++Inc)
 	{
+		//Don't take oiler trucks.
+		if (UnitInGroup(OilTrucks, Known[Inc])) continue;
+		
 		if (TruckBusy(Known[Inc]) && !StealOk) continue;
 		
 		TruckList.push(Known[Inc]);
@@ -340,6 +346,32 @@ function SortByProximityToBase(Object1, Object2)
 	return One - Two;
 }
 
+function FindClosestInGroup(GroupID, Target, StealOk)
+{
+	var Group = enumGroup(GroupID);
+	var Closest = Infinity;
+	var Distance;
+	
+	var Unit;
+	if (!Group) return null;
+	
+	for (G in Group)
+	{
+		if (TruckBusy(Group[G]) && !StealOk) continue;
+		
+		Distance = distBetweenTwoPoints(Target.x, Target.y, Group[G].x, Group[G].y);
+		
+		if (Distance < Closest)
+		{
+			Closest = Distance;
+			Unit = Group[G];
+		}
+	}
+	
+	if (!Unit) return null;
+	return Unit;
+}
+
 function FindClosestTruck(Target, StealOk)
 {
 	var Trucky;
@@ -355,6 +387,8 @@ function FindClosestTruck(Target, StealOk)
 	
 	for (var Inc = 0; Inc < List.length; ++Inc)
 	{
+		if (UnitInGroup(OilTrucks, List[Inc])) continue;
+		
 		if (TruckBusy(List[Inc]) && !StealOk) continue;
 		 
 		Distance = distBetweenTwoPoints(Target.x, Target.y, List[Inc].x, List[Inc].y);
@@ -366,8 +400,55 @@ function FindClosestTruck(Target, StealOk)
 		}
 	}
 	
+	if (!Trucky) return null;
+	
 	return Trucky;
 }
+
+function CountGroupSize(GroupID)
+{
+	var Group = enumGroup(GroupID);
+	
+	return Group.length;
+}
+
+function GrabOilTrucks()
+{
+	var Droids = enumDroid(me, DROID_ANY);
+	var ExistingOilers = enumGroup(OilTrucks);
+	
+	var Needed = 4 - ExistingOilers;
+	
+	
+	for (D in Droids)
+	{
+		if (!Needed) return;
+		
+		if (Droids[D].droidType == DROID_CONSTRUCT || Droids[D].droidType == DROID_CYBORG_CONSTRUCT)
+		{
+			groupAddDroid(OilTrucks, Droids[D]);
+			--Needed;
+		}
+	}
+}
+
+function NeedToBuildOils()
+{
+	
+	var Oils = enumFeature(-1, OilPool);
+	
+	
+	for (O in Oils)
+	{
+		if (30 >= distBetweenTwoPoints(startPositions[me].x, startPositions[me].y, Oils[O].x, Oils[O].y))
+		{
+			return true;
+		}
+	}
+	
+	return false;
+}
+
 		
 function BuildOils()
 {
@@ -385,7 +466,7 @@ function BuildOils()
 		if (30 >= distBetweenTwoPoints(startPositions[me].x, startPositions[me].y, Oils[Inc].x, Oils[Inc].y))
 		{	
 			
-			var Trucky = FindClosestTruck(Oils[Inc], false);
+			var Trucky = FindClosestInGroup(OilTrucks, Oils[Inc], false);
 			
 			if (Trucky == null) return false;
 			
@@ -469,6 +550,21 @@ function MakeTrucks(IsBorgFac)
 	return true;
 }
 
+function UnitInGroup(GroupID, Droid)
+{
+	var Group = enumGroup(GroupID);
+	
+	for (G in Group)
+	{
+		if (Group[G].id == Droid.id)
+		{
+			return true;
+		}
+	}
+	
+	return false;
+}
+
 function MakeTanks()
 {
 	//Make trucks if we don't have enough.
@@ -523,6 +619,18 @@ function DoAllResearch()
 	}
 }
 
+function FreeOilTrucks()
+{
+	var Droids = enumDroid(me, DROID_ANY);
+	
+	for (G in Droids)
+	{
+		if (Droids[G].droidType == DROID_CONSTRUCT || Droids[G].droidType == DROID_CYBORG_CONSTRUCT)
+		{
+			groupAddDroid(NonOilTrucks, Droids[G]);
+		}
+	}
+}
 
 function WorkOnBase()
 {
@@ -531,6 +639,23 @@ function WorkOnBase()
 	var Factories = enumStruct(me, baseStruct_Factory);
 	var BorgFacs = enumStruct(me, baseStruct_BorgFac);
 	var CC = enumStruct(me, baseStruct_CC);	
+	
+	
+	
+	//Grab oiler trucks.
+	if (NeedToBuildOils())
+	{
+		if (CountTrucks() >= 8 && CountGroupSize(OilTrucks) < 4)
+		{
+			GrabOilTrucks();
+		}
+		BuildOils();
+	}
+	else
+	{
+		FreeOilTrucks();
+	}
+	
 	
 	//Basic stuff just to get us going
 	if (Researches.length < 3)
@@ -542,8 +667,6 @@ function WorkOnBase()
 		OrderBaseBuild(baseStruct_Factory);
 
 	}
-	
-	BuildOils();
 	
 	//More automated base building
 	if (Generators.length < 4)
@@ -613,6 +736,9 @@ function WorkOnBase()
 
 function eventStartLevel()
 {
+	OilTrucks = newGroup();
+	NonOilTrucks = newGroup();
+	
 	setTimer("DoAllResearch", 500);
 	setTimer("MakeTanks", 500);
 	setTimer("MakeBorgs", 500);
