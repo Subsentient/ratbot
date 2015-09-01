@@ -105,6 +105,10 @@ const Limit_VFac = 5;
 const Limit_CC = 1;
 
 
+///How many tiles away an oil has to be before we will NOT build it.
+const MaxOilDistance = 20;
+
+
 ///Fixes a bug.
 const DROID_CYBORG_CONSTRUCT = 10;
 
@@ -440,7 +444,7 @@ function NeedToBuildOils()
 	
 	for (O in Oils)
 	{
-		if (30 >= distBetweenTwoPoints(startPositions[me].x, startPositions[me].y, Oils[O].x, Oils[O].y))
+		if (MaxOilDistance >= distBetweenTwoPoints(startPositions[me].x, startPositions[me].y, Oils[O].x, Oils[O].y))
 		{
 			return true;
 		}
@@ -459,11 +463,10 @@ function BuildOils()
 		return false;
 	}
 	
-	//Oils.sort(SortOils);
 	
 	for (var Inc = 0; Inc < Oils.length; ++Inc)
 	{
-		if (30 >= distBetweenTwoPoints(startPositions[me].x, startPositions[me].y, Oils[Inc].x, Oils[Inc].y))
+		if (MaxOilDistance >= distBetweenTwoPoints(startPositions[me].x, startPositions[me].y, Oils[Inc].x, Oils[Inc].y))
 		{	
 			
 			var Trucky = FindClosestInGroup(OilTrucks, Oils[Inc], false);
