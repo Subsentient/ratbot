@@ -41,26 +41,49 @@ const Module_Generator = "A0PowMod1";
 
 const OilPool = "OilResource";
 
-const OilTrucks; //The numeric group ID.
-const NonOilTrucks; //Hack because I can't find another way to un-group trucks.
+///Limits.
+const Limit_PGen = 10;
+const Limit_Res = 5;
+const Limit_Fac = 5;
+const Limit_BFac = 5;
+const Limit_VFac = 5;
+const Limit_CC = 1;
+
+
+///How many tiles away an oil has to be before we will NOT build it.
+const MaxOilDistance = 20;
+const MaxWatchingDistance = 35;
+
+var OilTrucks; //The numeric group ID.
+var NonOilTrucks; //Hack because I can't find another way to un-group trucks.
+
+///Bug fixes. All of these came from nullbot.
+const DROID_CYBORG_CONSTRUCT = 10;
+const COMP_PROPULSION = 3;
+const COMP_BODY = 1;
+const COMP_WEAPON = 8;
+
+
+/**//*AFTER THIS IS STUFF THAT CAN CHANGE.*//**/
+
 
 ///Research path.
 var ResearchPath = ["R-Vehicle-Prop-Halftracks", "R-Vehicle-Body05", "R-Struc-Research-Upgrade09","R-Wpn-Cannon4AMk1",
 					"R-Wpn-Cannon6TwinAslt", "R-Wpn-RailGun03",	"R-Vehicle-Metals02", "R-Cyborg-Metals04",
 					"R-Cyborg-Hvywpn-Acannon", "R-Cyborg-Hvywpn-RailGunner", "R-Vehicle-Body09","R-Cyborg-Metals09","R-Vehicle-Metals09",
-					"R-Struc-Factory-Upgrade09", "R-Struc-Power-Upgrade03a", "R-Wpn-MG-ROF01" ];
+					"R-Struc-Factory-Upgrade09", "R-Struc-Power-Upgrade03a", "R-Wpn-MG3Mk1" ];
 
 
 
-///Truck templates.
+///Truck templates. We just iterate through these.
 var TruckTemplates = new Array(
 				[body_Retaliation, prop_Tracks, "Spade1Mk1"],
 				[body_Bug, prop_Tracks, "Spade1Mk1"],
 				[body_Viper, prop_Halftracks, "Spade1Mk1"],
 				[body_Viper, prop_Wheels, "Spade1Mk1"]);
 
-///Tank templates.
-var TankTemplates = new Array(
+///Tank pre-templates.
+var AT_TankTemplates = new Array(
 				[body_Vengeance, prop_Tracks, "RailGun3Mk1"],
 				[body_Tiger, prop_Halftracks, "RailGun3Mk1"],
 				[body_Tiger, prop_Halftracks, "RailGun2Mk1"],
@@ -81,37 +104,67 @@ var TankTemplates = new Array(
 				[body_Cobra, prop_Halftracks, "Cannon2A-TMk1"],
 				[body_Cobra, prop_Halftracks, "Cannon1Mk1"],
 				[body_Viper, prop_Halftracks, "Cannon1Mk1"],
-				[body_Viper, prop_Wheels, "Cannon1Mk1"],
+				[body_Viper, prop_Wheels, "Cannon1Mk1"]);
+				
+var AP_TankTemplates = new Array(
+				[body_Vengeance, prop_Tracks, "Laser2PULSEMk1"],
+				[body_Vengeance, prop_Tracks, "MG5TWINROTARY"],
+				[body_Tiger, prop_Halftracks, "MG5TWINROTARY"],
+				[body_Mantis, prop_Tracks, "MG5TWINROTARY"],
+				[body_Python, prop_Halftracks, "MG5TWINROTARY"],
+				[body_Tiger, prop_Halftracks, "MG4ROTARYMk1"],
+				[body_Mantis, prop_Tracks, "MG4ROTARYMk1"],
+				[body_Python, prop_Halftracks, "MG4ROTARYMk1"],
+				[body_Python, prop_Halftracks, "MG3Mk1"],
+				[body_Cobra, prop_Halftracks, "MG3Mk1"],
+				[body_Viper, prop_Halftracks, "MG3Mk1"],
+				[body_Cobra, prop_Halftracks, "MG2Mk1"],
+				[body_Viper, prop_Halftracks, "MG2Mk1"],
+				[body_Viper, prop_Wheels, "MG2Mk1"],
 				[body_Viper, prop_Halftracks, "MG1Mk1"],
 				[body_Viper, prop_Wheels, "MG1Mk1"]);
-				
+
 ///Borg templates.
-var BorgTemplates = new Array(
+var AT_BorgTemplates = new Array(
 				["Cyb-Hvybod-RailGunner", "CyborgLegs", "Cyb-Hvywpn-RailGunner"], 
 				["Cyb-Bod-Rail1", "CyborgLegs", "Cyb-Wpn-Rail1"],
 				["Cyb-Hvybod-Acannon", "CyborgLegs", "Cyb-Hvywpn-Acannon"],
 				["Cyb-Hvybod-HPV", "CyborgLegs", "Cyb-Hvywpn-HPV"],
 				["Cyb-Hvybod-Mcannon", "CyborgLegs", "Cyb-Hvywpn-Mcannon"],
-				["CyborgRkt1Ground", "CyborgLegs", "CyborgRocket"],
+				["CyborgCannonGrd", "CyborgLegs", "CyborgCannon"]);
+
+var AP_BorgTemplates = new Array(
+				["Cyb-Hvybod-PulseLsr", "CyborgLegs", "Cyb-Hvywpn-PulseLsr"],
+				["Cyb-Bod-Las1", "CyborgLegs", "Cyb-Wpn-Laser"],
+				["CybRotMgGrd", "CyborgLegs", "CyborgRotMG"],
 				["CyborgChain1Ground", "CyborgLegs", "CyborgChaingun"]);
 				
-				
-///Limits.
-const Limit_PGen = 10;
-const Limit_Res = 5;
-const Limit_Fac = 5;
-const Limit_BFac = 5;
-const Limit_VFac = 5;
-const Limit_CC = 1;
+var Ratios = new Array(
+					new UnitRatio("Cyb-Hvybod-Mcannon", COMP_BODY, [0], null, [0], null, 1, 1), //Superborg and up, pure AT
+					new UnitRatio("Cannon2A-TMk1", COMP_WEAPON, [0], null, [0], [1], 1, 2), //Medium cannon and up, pure cannon tanks, 50/50 borgs
+					new UnitRatio("Cannon1Mk1", COMP_WEAPON, [0], [1], [0], [1], 2, 2) //With light cannon, 50/50 tanks and 50/50 borgs
+					);
+
+var CurrentRatio = new UnitRatio(null, null, null, [0], null, [0], 1, 1); //Trigger weapon doesn't matter for the first ratio.
 
 
-///How many tiles away an oil has to be before we will NOT build it.
-const MaxOilDistance = 20;
-const MaxWatchingDistance = 35;
 
-///Fixes a bug.
-const DROID_CYBORG_CONSTRUCT = 10;
-
+function UnitRatio(Trigger, TriggerType, TankAT, TankAP, BorgAT, BorgAP, TankLimit, BorgLimit)
+{
+	this.Trigger = Trigger; //The weapon that triggers the unit ratio update.
+	this.TriggerType = TriggerType; //The type of the trigger
+	this.TankAT = TankAT; //The numbers that will occur in TankLimit and BorgLimit that indicate we want an AT unit.
+	this.TankAP = TankAP; //The numbers that will occur in TankLimit and BorgLimit that indicate we want an AP unit.
+	this.BorgAT = BorgAT; // ^ See above
+	this.BorgAP = BorgAP;
+	this.TankLimit = TankLimit; //The number of "cycles" we're going to use to produce the desired ratio of AT to AP units.
+	this.BorgLimit = BorgLimit; //Same as above but for borgs.
+	
+	//This stuff is what we increment, which we reset to zero when TankLimit or BorgLimit is reached.
+	this.TankInc = 0;
+	this.BorgInc = 0;
+}
+	
 function WatchForEnemies()
 {
 	for (var Inc = 0; Inc < maxPlayers; ++Inc)
@@ -275,15 +328,44 @@ function MakeBorgs()
 		return;
 	}
 	
+	FactoryLoop:
 	for (Fac in BorgFacs)
 	{
 		if (!structureIdle(BorgFacs[Fac])) continue;
 		
-		//With borgs our production must be done differently.
-		for (Borg in BorgTemplates)
+		if (CurrentRatio.BorgInc === CurrentRatio.BorgLimit) CurrentRatio.BorgInc = 0;
+		
+		for (E in CurrentRatio.BorgAT)
 		{
-			if (buildDroid(BorgFacs[Fac], "Borg", BorgTemplates[Borg][0], BorgTemplates[Borg][1], "", DROID_CYBORG, BorgTemplates[Borg][2]))
+			if (CurrentRatio.BorgInc === CurrentRatio.BorgAT[E])
 			{
+				for (T in AT_BorgTemplates)
+				{
+					var TemplateName = AT_BorgTemplates[T][2] + " " + AT_BorgTemplates[T][0] + " " + AT_BorgTemplates[T][1];
+					if (buildDroid(BorgFacs[Fac], TemplateName, AT_BorgTemplates[T][0], AT_BorgTemplates[T][1], "", DROID_CYBORG, AT_BorgTemplates[T][2]))
+					{
+						++CurrentRatio.BorgInc;
+						continue FactoryLoop;
+					}
+				}
+				break;
+			}
+		}
+		
+		for (E in CurrentRatio.BorgAP)
+		{
+			if (CurrentRatio.BorgInc === CurrentRatio.BorgAP[E])
+			{
+				for (T in AP_BorgTemplates)
+				{
+					var TemplateName = AP_BorgTemplates[T][2] + " " + AP_BorgTemplates[T][0] + " " + AP_BorgTemplates[T][1];
+					if (buildDroid(BorgFacs[Fac], TemplateName, AP_BorgTemplates[T][0], AP_BorgTemplates[T][1], "", DROID_CYBORG, AP_BorgTemplates[T][2]))
+					{	
+						++CurrentRatio.BorgInc;
+						break;
+					}
+				}
+				
 				break;
 			}
 		}
@@ -615,17 +697,48 @@ function MakeTanks()
 	
 	if (Facs == null) return;
 	
+	FactoryLoop:
 	for (Fac in Facs)
 	{
 		if (!structureIdle(Facs[Fac])) continue;
 		
-		for (Tank in TankTemplates)
+		if (CurrentRatio.TankInc === CurrentRatio.TankLimit) CurrentRatio.TankInc = 0;
+		
+		for (E in CurrentRatio.TankAT)
 		{
-			if (buildDroid(Facs[Fac], "Tank", TankTemplates[Tank][0], TankTemplates[Tank][1], "", DROID_WEAPON, TankTemplates[Tank][2]))
+			if (CurrentRatio.TankInc === CurrentRatio.TankAT[E])
 			{
+				for (T in AT_TankTemplates)
+				{
+					var TemplateName = AT_TankTemplates[T][2] + " " + AT_TankTemplates[T][0] + " " + AT_TankTemplates[T][1];
+					if (buildDroid(Facs[Fac], TemplateName, AT_TankTemplates[T][0], AT_TankTemplates[T][1], "", DROID_WEAPON, AT_TankTemplates[T][2]))
+					{
+						++CurrentRatio.TankInc;
+						continue FactoryLoop;
+					}
+				}
 				break;
 			}
 		}
+		
+		for (E in CurrentRatio.TankAP)
+		{
+			if (CurrentRatio.TankInc === CurrentRatio.TankAP[E])
+			{
+				for (T in AP_TankTemplates)
+				{
+					var TemplateName = AP_TankTemplates[T][2] + " " + AP_TankTemplates[T][0] + " " + AP_TankTemplates[T][1];
+					if (buildDroid(Facs[Fac], TemplateName, AP_TankTemplates[T][0], AP_TankTemplates[T][1], "", DROID_WEAPON, AP_TankTemplates[T][2]))
+					{	
+						++CurrentRatio.TankInc;
+						break;
+					}
+				}
+				
+				break;
+			}
+		}
+		
 	}
 }
 
@@ -775,6 +888,8 @@ function eventStartLevel()
 	OilTrucks = newGroup();
 	NonOilTrucks = newGroup();
 	
+	UpdateUnitRatios(); //Make them appropriate for our current technology level.
+	
 	setTimer("DoAllResearch", 500);
 	setTimer("MakeTanks", 500);
 	setTimer("MakeBorgs", 500);
@@ -806,3 +921,24 @@ function eventAttacked(Target, Attacker)
 	}
 }
 
+function UpdateUnitRatios()
+{
+	for (R in Ratios)
+	{
+		if (Ratios[R].TriggerType == null) continue;
+		
+		if (componentAvailable(Ratios[R].TriggerType, Ratios[R].Trigger))
+		{
+			if (CurrentRatio.Trigger != Ratios[R].Trigger)
+			{
+				CurrentRatio = Ratios[R];
+			}
+			return;
+		}
+	}
+}
+
+function eventResearched(DoNot, Care)
+{
+	UpdateUnitRatios();
+}
