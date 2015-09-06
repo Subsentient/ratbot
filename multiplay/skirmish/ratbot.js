@@ -912,9 +912,19 @@ function UpdateRatios()
 	{
 		var Res = getResearch(Ratios[R].Trigger);
 		
-		if (Res.done && CurrentRatio.Trigger != Ratios[R].Trigger)
+		if (Res.done)
 		{
+			var Backup = CurrentRatio;
 			CurrentRatio = Ratios[R];
+			if (CurrentRatio.TankLimit == Backup.TankLimit)
+			{
+				CurrentRatio.TankInc = Backup.TankInc;
+			}
+			if (CurrentRatio.BorgLimit == Backup.BorgLimit)
+			{
+				CurrentRatio.BorgInc = Backup.BorgInc;
+			}
+			
 			break;
 		}
 	}
@@ -953,6 +963,7 @@ function eventResearched(Research, Herp)
 	{
 		if (Ratios[R].Trigger == Research.name)
 		{
+			debug("Event updated ratio to " + Ratios[R].Trigger);
 			CurrentRatio = Ratios[R];
 		}
 	}
