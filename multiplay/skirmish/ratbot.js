@@ -140,19 +140,18 @@ var AP_BorgTemplates = new Array(
 				["CyborgChain1Ground", "CyborgLegs", "CyborgChaingun"]);
 				
 var Ratios = new Array(
-					new UnitRatio("Cyb-Hvybod-Mcannon", COMP_BODY, [0], null, [0], null, 1, 1), //Superborg and up, pure AT
-					new UnitRatio("Cannon2A-TMk1", COMP_WEAPON, [0], null, [0], [1], 1, 2), //Medium cannon and up, pure cannon tanks, 50/50 borgs
-					new UnitRatio("Cannon1Mk1", COMP_WEAPON, [0], [1], [0], [1], 2, 2) //With light cannon, 50/50 tanks and 50/50 borgs
+					new UnitRatio("R-Cyborg-Hvywpn-Mcannon", [0], null, [0], null, 1, 1), //Superborg and up, pure AT
+					new UnitRatio("R-Wpn-Cannon2Mk1", [0], null, [0], [1], 1, 2), //Medium cannon and up, pure cannon tanks, 50/50 borgs
+					new UnitRatio("R-Wpn-Cannon1Mk1", [0], [1], [0], [1], 2, 2) //With light cannon, 50/50 tanks and 50/50 borgs
 					);
 
-var CurrentRatio = new UnitRatio(null, null, null, [0], null, [0], 1, 1); //Trigger weapon doesn't matter for the first ratio.
+var CurrentRatio = new UnitRatio(null, null, [0], null, [0], 1, 1); //Trigger weapon doesn't matter for the first ratio.
 
 
 
-function UnitRatio(Trigger, TriggerType, TankAT, TankAP, BorgAT, BorgAP, TankLimit, BorgLimit)
+function UnitRatio(Trigger, TankAT, TankAP, BorgAT, BorgAP, TankLimit, BorgLimit)
 {
 	this.Trigger = Trigger; //The weapon that triggers the unit ratio update.
-	this.TriggerType = TriggerType; //The type of the trigger
 	this.TankAT = TankAT; //The numbers that will occur in TankLimit and BorgLimit that indicate we want an AT unit.
 	this.TankAP = TankAP; //The numbers that will occur in TankLimit and BorgLimit that indicate we want an AP unit.
 	this.BorgAT = BorgAT; // ^ See above
@@ -888,13 +887,23 @@ function eventStartLevel()
 	OilTrucks = newGroup();
 	NonOilTrucks = newGroup();
 	
-	UpdateUnitRatios(); //Make them appropriate for our current technology level.
+	//Make ratios work properly in bases modes.
+	for (R in Ratios)
+	{
+		var Res = getResearch(Ratios[R].Trigger);
+		
+		if (Res.done)
+		{
+			CurrentRatio = Ratios[R];
+			break;
+		}
+	}
 	
-	setTimer("DoAllResearch", 500);
-	setTimer("MakeTanks", 500);
-	setTimer("MakeBorgs", 500);
-	setTimer("WorkOnBase", 500);
-	setTimer("WatchForEnemies", 500);
+	setTimer("DoAllResearch", 250); //Every quarter second.
+	setTimer("MakeTanks", 250); //Every quarter second.
+	setTimer("MakeBorgs", 250); //Every quarter second.
+	setTimer("WorkOnBase", 250); //Every quarter second.
+	setTimer("WatchForEnemies", 500); //Every half second.
 	setTimer("PerformAttack", 20000); //Every 20 secs.
 }
 
@@ -921,24 +930,13 @@ function eventAttacked(Target, Attacker)
 	}
 }
 
-function UpdateUnitRatios()
+function eventResearched(Research, Herp)
 {
 	for (R in Ratios)
 	{
-		if (Ratios[R].TriggerType == null) continue;
-		
-		if (componentAvailable(Ratios[R].TriggerType, Ratios[R].Trigger))
+		if (Ratios[R].Trigger == Research.name)
 		{
-			if (CurrentRatio.Trigger != Ratios[R].Trigger)
-			{
-				CurrentRatio = Ratios[R];
-			}
-			return;
+			CurrentRatio = Ratios[R];
 		}
 	}
-}
-
-function eventResearched(DoNot, Care)
-{
-	UpdateUnitRatios();
 }
