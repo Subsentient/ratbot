@@ -63,12 +63,13 @@ const COMP_PROPULSION = 3;
 const COMP_BODY = 1;
 const COMP_WEAPON = 8;
 
+var TrucksBeingMade = 0; //The number of trucks currently in production.
 
 /**//*AFTER THIS IS STUFF THAT CAN CHANGE.*//**/
 
 
 ///Research path.
-var ResearchPath = ["R-Vehicle-Prop-Halftracks", "R-Vehicle-Body05", "R-Struc-Research-Upgrade09","R-Wpn-Cannon4AMk1",
+var ResearchPath = ["R-Vehicle-Prop-Halftracks", "R-Vehicle-Body05", "R-Vehicle-Body05", "R-Struc-Research-Upgrade09","R-Wpn-Cannon4AMk1",
 					"R-Wpn-Cannon6TwinAslt", "R-Wpn-RailGun03",	"R-Vehicle-Metals02", "R-Cyborg-Metals04",
 					"R-Cyborg-Hvywpn-Acannon", "R-Cyborg-Hvywpn-RailGunner", "R-Vehicle-Body09","R-Cyborg-Metals09","R-Vehicle-Metals09",
 					"R-Struc-Factory-Upgrade09", "R-Struc-Power-Upgrade03a", "R-Wpn-MG3Mk1" ];
@@ -622,7 +623,7 @@ function eventStructureBuilt(Struct, Droid)
 function MakeTrucks(IsBorgFac)
 {
 	var Trucks = enumDroid(me, DROID_CONSTRUCT);
-	var TruckNum = CountTrucks();
+	var TruckNum = CountTrucks() + TrucksBeingMade;
 	
 	if (TruckNum >= 15) return false;
 	
@@ -645,12 +646,11 @@ function MakeTrucks(IsBorgFac)
 		{
 			if (buildDroid(Facs[Inc], "Combat Engineer", "Cyb-Bod-ComEng", "CyborgLegs", "", DROID_CYBORG_CONSTRUCT, "CyborgSpade"))
 			{
-				debug("Queued combat engineer.");
+				++TrucksBeingMade;
 				continue;
 			}
 			else
 			{
-				debug("Failed to build combat engineer.");
 				break;
 			}
 		}
@@ -659,6 +659,7 @@ function MakeTrucks(IsBorgFac)
 		{
 			if (buildDroid(Facs[Inc], "Truck", TruckTemplates[Trucky][0], TruckTemplates[Trucky][1], "", DROID_CONSTRUCT, TruckTemplates[Trucky][2]))
 			{
+				++TrucksBeingMade;
 				break;
 			}
 		}
@@ -892,7 +893,7 @@ function eventStartLevel()
 	setTimer("DoAllResearch", 250); //Every quarter second.
 	setTimer("MakeTanks", 250); //Every quarter second.
 	setTimer("MakeBorgs", 250); //Every quarter second.
-	setTimer("WorkOnBase", 250); //Every quarter second.
+	setTimer("WorkOnBase", 500); //Every quarter second.
 	setTimer("WatchForEnemies", 500); //Every half second.
 	setTimer("PerformAttack", 20000); //Every 20 secs.
 	setTimer("UpdateRatios", 3000); //Every 3 seconds.
@@ -916,6 +917,10 @@ function UpdateRatios()
 
 function eventDroidBuilt(droid, fac1)
 {
+	if (droid.droidType == DROID_CONSTRUCT || droid.droidType == DROID_CYBORG_CONSTRUCT)
+	{
+		--TrucksBeingMade;
+	}
 }
 
 
