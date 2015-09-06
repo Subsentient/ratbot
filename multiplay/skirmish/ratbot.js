@@ -64,6 +64,7 @@ const COMP_BODY = 1;
 const COMP_WEAPON = 8;
 
 var TrucksBeingMade = 0; //The number of trucks currently in production.
+var HadExtraTrucks = false; //If we started with more than 15 trucks, as some maps do.
 
 /**//*AFTER THIS IS STUFF THAT CAN CHANGE.*//**/
 
@@ -625,6 +626,8 @@ function MakeTrucks(IsBorgFac)
 	var Trucks = enumDroid(me, DROID_CONSTRUCT);
 	var TruckNum = CountTrucks() + TrucksBeingMade;
 	
+	if (TruckNum > 15 && !HadExtraTrucks) TrucksBeingMade = 0;
+	
 	if (TruckNum >= 15) return false;
 	
 	var Facs;
@@ -887,6 +890,8 @@ function eventStartLevel()
 {
 	OilTrucks = newGroup();
 	NonOilTrucks = newGroup();
+	
+	if (CountTrucks() > 15) HadExtraTrucks = true;
 	
 	UpdateRatios();
 	
