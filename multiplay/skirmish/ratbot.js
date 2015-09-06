@@ -887,17 +887,7 @@ function eventStartLevel()
 	OilTrucks = newGroup();
 	NonOilTrucks = newGroup();
 	
-	//Make ratios work properly in bases modes.
-	for (R in Ratios)
-	{
-		var Res = getResearch(Ratios[R].Trigger);
-		
-		if (Res.done)
-		{
-			CurrentRatio = Ratios[R];
-			break;
-		}
-	}
+	UpdateRatios();
 	
 	setTimer("DoAllResearch", 250); //Every quarter second.
 	setTimer("MakeTanks", 250); //Every quarter second.
@@ -905,6 +895,22 @@ function eventStartLevel()
 	setTimer("WorkOnBase", 250); //Every quarter second.
 	setTimer("WatchForEnemies", 500); //Every half second.
 	setTimer("PerformAttack", 20000); //Every 20 secs.
+	setTimer("UpdateRatios", 3000); //Every 3 seconds.
+}
+
+function UpdateRatios()
+{ //Although eventResearched() does a nice job with stuff we researched ourselves, allied stuff needs this function.
+	//Make ratios work properly in bases modes.
+	for (R in Ratios)
+	{
+		var Res = getResearch(Ratios[R].Trigger);
+		
+		if (Res.done && CurrentRatio.Trigger != Ratios[R].Trigger)
+		{
+			CurrentRatio = Ratios[R];
+			break;
+		}
+	}
 }
 
 
