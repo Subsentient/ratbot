@@ -183,7 +183,7 @@ function WatchForEnemies()
 			{ //ALERT! Someone is near us!
 				var Droids = enumDroid(me, DROID_ANY);
 				
-				if (!Droids) return;
+				if (!Droids || !Droids.length) return;
 				
 				if (!droidCanReach(Droids[0], EnemyDroids[D].x, EnemyDroids[D].y)) continue;
 				
@@ -384,6 +384,23 @@ function TruckBusy(Truck)
 			return true;
 		default:
 			return false;
+	}
+}
+
+function FinishHalfBuilds()
+{
+	var Structs = enumStruct(me);
+	
+	for (S in Structs)
+	{
+		if (Structs[S].status != BUILT)
+		{
+			var Trucks = FindTrucks(2, false);
+			for (T in Trucks)
+			{
+				orderDroidObj(Trucks[T], DORDER_HELPBUILD, Structs[S]);
+			}
+		}
 	}
 }
 
@@ -903,6 +920,7 @@ function eventStartLevel()
 	setTimer("WatchForEnemies", 500); //Every half second.
 	setTimer("PerformAttack", 20000); //Every 20 secs.
 	setTimer("UpdateRatios", 3000); //Every 3 seconds.
+	setTimer("FinishHalfBuilds", 7000); //Every 7 seconds.
 }
 
 function UpdateRatios()
