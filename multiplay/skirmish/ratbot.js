@@ -73,7 +73,7 @@ var HadExtraTrucks = false; //If we started with more than 15 trucks, as some ma
 var ResearchPath = ["R-Vehicle-Prop-Halftracks", "R-Vehicle-Body05", "R-Vehicle-Body05", "R-Struc-Research-Upgrade09","R-Wpn-Cannon4AMk1",
 					"R-Wpn-Cannon6TwinAslt", "R-Wpn-RailGun03",	"R-Vehicle-Metals02", "R-Cyborg-Metals04",
 					"R-Cyborg-Hvywpn-Acannon", "R-Cyborg-Hvywpn-RailGunner", "R-Vehicle-Body09","R-Cyborg-Metals09","R-Vehicle-Metals09",
-					"R-Struc-Factory-Upgrade09", "R-Struc-Power-Upgrade03a", "R-Wpn-MG3Mk1" ];
+					"R-Struc-Factory-Upgrade09", "R-Struc-Power-Upgrade03a", "R-Wpn-MG2Mk1" ];
 
 
 
@@ -851,13 +851,13 @@ function WorkOnBase()
 	{
 		OrderBaseBuild(baseStruct_Generator);
 	}
-	else if (Factories.length < Limit_Fac)
-	{
-		OrderBaseBuild(baseStruct_Factory);
-	}
 	else if (CC.length < Limit_CC)
 	{
 		OrderBaseBuild(baseStruct_CC);
+	}
+	else if (Factories.length < Limit_Fac)
+	{
+		OrderBaseBuild(baseStruct_Factory);
 	}
 
 	
