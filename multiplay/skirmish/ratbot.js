@@ -815,7 +815,7 @@ function WorkOnBase()
 	//Grab oiler trucks.
 	if (NeedToBuildOils())
 	{
-		if (CountTrucks() >= 8 && CountGroupSize(OilTrucks) < 4)
+		if (CountTrucks() >= 6 && CountGroupSize(OilTrucks) < 4)
 		{
 			GrabOilTrucks();
 		}
@@ -828,7 +828,7 @@ function WorkOnBase()
 	
 	
 	//Basic stuff just to get us going
-	if (Researches.length < 3)
+	if (Researches.length < 2)
 	{
 		OrderBaseBuild(baseStruct_Research);
 	}
@@ -847,10 +847,6 @@ function WorkOnBase()
 	{
 		OrderBaseBuild(baseStruct_Research);
 	}
-	else if (CC.length < Limit_CC)
-	{
-		OrderBaseBuild(baseStruct_CC);
-	}
 	else if (Generators.length < Limit_PGen)
 	{
 		OrderBaseBuild(baseStruct_Generator);
@@ -859,6 +855,11 @@ function WorkOnBase()
 	{
 		OrderBaseBuild(baseStruct_Factory);
 	}
+	else if (CC.length < Limit_CC)
+	{
+		OrderBaseBuild(baseStruct_CC);
+	}
+
 	
 	//Get borg facs up
 	if (isStructureAvailable(baseStruct_BorgFac, me) && BorgFacs.length < Limit_BFac)
