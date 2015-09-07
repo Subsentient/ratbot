@@ -143,7 +143,7 @@ var AP_BorgTemplates = new Array(
 				
 var Ratios = new Array(
 					new UnitRatio("R-Cyborg-Hvywpn-Mcannon", [0], null, [0], null, 1, 1), //Superborg and up, pure AT
-					new UnitRatio("R-Wpn-Cannon4AMk1", [0], null, null, [0], 1, 1), //HPV and up, pure cannon tanks, pure mg borgs
+					new UnitRatio("R-Wpn-Cannon4AMk1", [0], null, [0], [1], 1, 2), //In case med cannon comes before hpv etc
 					new UnitRatio("R-Wpn-Cannon2Mk1", [0], null, [0], [1], 1, 2), //Medium cannon and up, pure cannon tanks, 50/50 borgs
 					new UnitRatio("R-Wpn-Cannon1Mk1", [0], [1], [0], [1], 2, 2) //With light cannon, 50/50 tanks and 50/50 borgs
 					);
