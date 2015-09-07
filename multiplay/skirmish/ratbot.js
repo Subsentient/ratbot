@@ -944,7 +944,7 @@ function eventStartLevel()
 	
 	UpdateRatios();
 	
-	setTimer("DoAllResearch", 500);
+	setTimer("DoAllResearch", 700);
 	setTimer("MakeTanks", 500);
 	setTimer("MakeBorgs", 500);
 	setTimer("WorkOnBase", 500);
