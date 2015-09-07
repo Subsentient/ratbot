@@ -71,7 +71,7 @@ var HadExtraTrucks = false; //If we started with more than 15 trucks, as some ma
 
 ///Research path.
 var ResearchPath = ["R-Vehicle-Prop-Halftracks", "R-Vehicle-Body05", "R-Vehicle-Body11", "R-Struc-Research-Upgrade09","R-Wpn-Cannon4AMk1",
-					"R-Wpn-RailGun03", "R-Wpn-Cannon6TwinAslt", "R-Vehicle-Metals04", "R-Cyborg-Metals04",
+					"R-Wpn-RailGun03", "R-Wpn-Cannon6TwinAslt", "R-Vehicle-Metals04", "R-Cyborg-Metals04", "R-Cyborg-Hvywpn-Mcannon",
 					"R-Wpn-MG2Mk1" ];
 
 ///Expanded research path triggered when a piece of tech becomes available.
@@ -944,15 +944,15 @@ function eventStartLevel()
 	
 	UpdateRatios();
 	
-	setTimer("DoAllResearch", 250); //Every quarter second.
-	setTimer("MakeTanks", 250); //Every quarter second.
-	setTimer("MakeBorgs", 250); //Every quarter second.
-	setTimer("WorkOnBase", 500); //Every quarter second.
-	setTimer("WatchForEnemies", 500); //Every half second.
-	setTimer("PerformAttack", 20000); //Every 20 secs.
-	setTimer("UpdateRatios", 3000); //Every 3 seconds.
-	setTimer("FinishHalfBuilds", 7000); //Every 7 seconds.
-	setTimer("ManageResearchStages", 10000); //Every 10 seconds.
+	setTimer("DoAllResearch", 500);
+	setTimer("MakeTanks", 500);
+	setTimer("MakeBorgs", 500);
+	setTimer("WorkOnBase", 500);
+	setTimer("WatchForEnemies", 1000);
+	setTimer("PerformAttack", 20000);
+	setTimer("UpdateRatios", 3000);
+	setTimer("FinishHalfBuilds", 7000);
+	setTimer("ManageResearchStages", 10000);
 }
 
 function UpdateRatios()
