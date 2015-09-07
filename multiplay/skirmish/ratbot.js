@@ -284,7 +284,7 @@ function PerformAttack()
 	
 	var NonDefenseStructs = enumCriticalStructs(Target);
 	
-	if (NonDefenseStructs.length < 8 && EnemyDroids.length < 30)
+	if (NonDefenseStructs.length < 12 && EnemyDroids.length < 30)
 	{ ///They are almost dead, finish them off.
 		for (Droid in Droids)
 		{
