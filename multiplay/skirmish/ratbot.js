@@ -70,11 +70,17 @@ var HadExtraTrucks = false; //If we started with more than 15 trucks, as some ma
 
 
 ///Research path.
-var ResearchPath = ["R-Vehicle-Prop-Halftracks", "R-Vehicle-Body05", "R-Vehicle-Body05", "R-Struc-Research-Upgrade09","R-Wpn-Cannon4AMk1",
-					"R-Wpn-Cannon6TwinAslt", "R-Wpn-RailGun03",	"R-Vehicle-Metals02", "R-Cyborg-Metals04",
-					"R-Cyborg-Hvywpn-Acannon", "R-Cyborg-Hvywpn-RailGunner", "R-Vehicle-Body09","R-Cyborg-Metals09","R-Vehicle-Metals09",
-					"R-Struc-Factory-Upgrade09", "R-Struc-Power-Upgrade03a", "R-Wpn-MG2Mk1" ];
+var ResearchPath = ["R-Vehicle-Prop-Halftracks", "R-Vehicle-Body05", "R-Vehicle-Body11", "R-Struc-Research-Upgrade09","R-Wpn-Cannon4AMk1",
+					"R-Wpn-RailGun03", "R-Wpn-Cannon6TwinAslt", "R-Vehicle-Metals04", "R-Cyborg-Metals04",
+					"R-Wpn-MG2Mk1" ];
 
+///Expanded research path triggered when a piece of tech becomes available.
+var ResearchStages = new Array(
+					new ResearchStage("R-Cyborg-Hvywpn-Mcannon", ["R-Vehicle-Body09", "R-Cyborg-Hvywpn-Acannon", "R-Struc-Power-Upgrade03a",
+									"R-Struc-Factory-Upgrade09", "R-Cyborg-Metals09","R-Vehicle-Metals09"]),
+					new ResearchStage("R-Wpn-Rail-Damage02", ["R-Cyborg-Hvywpn-RailGunner", "R-Vehicle-Prop-Tracks", "R-Vehicle-Body10",
+									"R-Sys-Autorepair-General", "R-Struc-Materials09", "R-Sys-Sensor-UpLink"])
+					);
 
 
 ///Truck templates. We just iterate through these.
@@ -166,7 +172,31 @@ function UnitRatio(Trigger, TankAT, TankAP, BorgAT, BorgAP, TankLimit, BorgLimit
 	this.TankInc = 0;
 	this.BorgInc = 0;
 }
-	
+
+function ResearchStage(Trigger, TechArray)
+{
+	this.Trigger = Trigger;
+	this.TechArray = TechArray;
+	this.Appended = false;
+}
+
+function ManageResearchStages()
+{
+	for (S in ResearchStages)
+	{
+		if (ResearchStages[S].Appended) continue;
+		
+		var Res = getResearch(ResearchStages[S].Trigger);
+		
+		if (Res.done)
+		{
+			ResearchPath = ResearchPath.concat(ResearchStages[S].TechArray);
+			ResearchStages[S].Appended = true;
+			return;
+		}
+	}
+}
+
 function WatchForEnemies()
 {
 	for (var Inc = 0; Inc < maxPlayers; ++Inc)
@@ -922,6 +952,7 @@ function eventStartLevel()
 	setTimer("PerformAttack", 20000); //Every 20 secs.
 	setTimer("UpdateRatios", 3000); //Every 3 seconds.
 	setTimer("FinishHalfBuilds", 7000); //Every 7 seconds.
+	setTimer("ManageResearchStages", 10000); //Every 10 seconds.
 }
 
 function UpdateRatios()
