@@ -363,7 +363,7 @@ function MakeBorgs()
 	FactoryLoop:
 	for (Fac in BorgFacs)
 	{
-		if (!structureIdle(BorgFacs[Fac])) continue;
+		if (!structureIdle(BorgFacs[Fac]) || BorgFacs[Fac].status != BUILT || !structureReady(BorgFacs[Fac])) continue;
 		
 		if (CurrentRatio.BorgInc === CurrentRatio.BorgLimit) CurrentRatio.BorgInc = 0;
 		
@@ -691,7 +691,7 @@ function MakeTrucks(IsBorgFac)
 	
 	for (var Inc = 0; Inc < Facs.length && Inc < 15 - Trucks.length; ++Inc)
 	{
-		if (!structureIdle(Facs[Inc])) continue;
+		if (!structureIdle(Facs[Inc]) || Facs[Inc].status != BUILT || !structureReady(Facs[Inc])) continue;
 		
 		if (IsBorgFac)
 		{
@@ -751,7 +751,7 @@ function MakeTanks()
 	FactoryLoop:
 	for (Fac in Facs)
 	{
-		if (!structureIdle(Facs[Fac])) continue;
+		if (!structureIdle(Facs[Fac]) || Facs[Fac].status != BUILT || !structureReady(Facs[Fac])) continue;
 		
 		if (CurrentRatio.TankInc === CurrentRatio.TankLimit) CurrentRatio.TankInc = 0;
 		
@@ -815,7 +815,10 @@ function DoAllResearch()
 	
 	for (Res in Researches)
 	{
-		ResearchSomething(Researches[Res]);
+		if (Researches[Res].status == BUILT && structureReady(Researches[Res]))
+		{
+			ResearchSomething(Researches[Res]);
+		}
 	}
 }
 
