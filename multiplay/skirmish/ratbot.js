@@ -321,7 +321,7 @@ function PerformAttack()
 	}
 	
 	//Only attack when we got all possible units, or we have 3x as many units as them.
-	if (Droids.length != 150 && ((EnemyAttackDroids * 3 > OurAttackDroids))) return;
+	if (Droids.length != 150 && ((EnemyAttackDroids * 3 > OurAttackDroids) || OurAttackDroids < 20)) return;
 	
 	var NonDefenseStructs = enumCriticalStructs(Target);
 
