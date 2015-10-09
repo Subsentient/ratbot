@@ -70,7 +70,7 @@ var HadExtraTrucks = false; //If we started with more than 15 trucks, as some ma
 
 
 ///Research path.
-var ResearchPath = ["R-Vehicle-Prop-Halftracks", "R-Vehicle-Body05", "R-Vehicle-Body11", "R-Struc-Research-Upgrade09","R-Wpn-Cannon4AMk1",
+var ResearchPath = ["R-Vehicle-Engine01", "R-Vehicle-Prop-Halftracks", "R-Vehicle-Body05", "R-Vehicle-Body11", "R-Struc-Research-Upgrade09","R-Wpn-Cannon4AMk1",
 					"R-Wpn-RailGun03", "R-Wpn-Cannon6TwinAslt", "R-Vehicle-Metals04", "R-Cyborg-Metals04", "R-Cyborg-Hvywpn-Mcannon",
 					"R-Wpn-MG2Mk1" ];
 
@@ -299,22 +299,33 @@ function PerformAttack()
 {
 	var Droids = enumDroid(me, DROID_ANY);
 	
-	
-	//Only attack when we got all possible units.
-	if (Droids.length != 150) return;
-	
-	
 	//Find an enemy to pwn
 	var Target = ChooseEnemy();
 	
 	if (Target == null) return;
 	
-	
 	var EnemyDroids = enumDroid(Target, DROID_ANY);
+	var EnemyAttackDroids = 0;
+	var OurAttackDroids = 0;
+	
+	for (D in Droids)
+	{ //Our attack droids.
+		if (Droids[D].droidType == DROID_CYBORG_CONSTRUCT || Droids[D].droidType == DROID_CONSTRUCT) continue;
+		++OurAttackDroids;
+	}
+	
+	for (D in EnemyDroids)
+	{ //Enemy attack droids.
+		if (EnemyDroids[D].droidType == DROID_CYBORG_CONSTRUCT || EnemyDroids[D].droidType == DROID_CONSTRUCT) continue;
+		++EnemyAttackDroids;
+	}
+	
+	//Only attack when we got all possible units, or we have 3x as many units as them.
+	if (Droids.length != 150 && ((EnemyAttackDroids * 3 > OurAttackDroids))) return;
 	
 	var NonDefenseStructs = enumCriticalStructs(Target);
-	
-	if (NonDefenseStructs.length < 12 && EnemyDroids.length < 30)
+
+	if (EnemyAttackDroids < 20)
 	{ ///They are almost dead, finish them off.
 		for (Droid in Droids)
 		{
@@ -946,12 +957,12 @@ function eventStartLevel()
 	
 	UpdateRatios();
 	
-	setTimer("DoAllResearch", 700);
-	setTimer("MakeTanks", 500);
-	setTimer("MakeBorgs", 500);
-	setTimer("WorkOnBase", 500);
+	setTimer("DoAllResearch", 1000);
+	setTimer("MakeTanks", 700);
+	setTimer("MakeBorgs", 700);
+	setTimer("WorkOnBase", 700);
 	setTimer("WatchForEnemies", 1000);
-	setTimer("PerformAttack", 20000);
+	setTimer("PerformAttack", 7000);
 	setTimer("UpdateRatios", 3000);
 	setTimer("FinishHalfBuilds", 7000);
 	setTimer("ManageResearchStages", 10000);
