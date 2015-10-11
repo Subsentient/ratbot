@@ -70,7 +70,7 @@ var HadExtraTrucks = false; //If we started with more than 15 trucks, as some ma
 
 
 ///Research path.
-var ResearchPath = ["R-Vehicle-Engine01", "R-Vehicle-Prop-Halftracks", "R-Vehicle-Body05", "R-Vehicle-Body11", "R-Struc-Research-Upgrade09","R-Wpn-Cannon4AMk1",
+var ResearchPath = ["R-Vehicle-Engine01", "R-Wpn-Cannon1Mk1", "R-Vehicle-Prop-Halftracks", "R-Vehicle-Body05", "R-Vehicle-Body11", "R-Struc-Research-Upgrade09","R-Wpn-Cannon4AMk1",
 					"R-Wpn-RailGun03", "R-Wpn-Cannon6TwinAslt", "R-Vehicle-Metals04", "R-Cyborg-Metals04", "R-Cyborg-Hvywpn-Mcannon",
 					"R-Wpn-MG2Mk1" ];
 
@@ -814,21 +814,27 @@ function ResearchSomething(Lab)
 	
 	if (!structureIdle(Lab)) return;
 	
-	for (Item in ResearchPath)
+	for (var Inc = 0; Inc < ResearchPath.length; ++Inc)
 	{
-		if ((Worked = pursueResearch(Lab, ResearchPath[Item]))) break;
+		if ((Worked = pursueResearch(Lab, ResearchPath[Inc])))
+		{
+			debug(me + ":: Research for item " + ResearchPath[Inc] + " started");
+			break;
+		}
 	}
+	
+	return Worked;
 }
 
 function DoAllResearch()
 {
 	var Researches = enumStruct(me, RESEARCH_LAB);
 	
-	for (Res in Researches)
+	for (var Inc = 0; Inc < Researches.length; ++Inc)
 	{
-		if (Researches[Res].status == BEING_BUILT) continue;
+		if (Researches[Inc].status == BEING_BUILT) continue;
 
-		ResearchSomething(Researches[Res]);
+		ResearchSomething(Researches[Inc]);
 	}
 }
 
@@ -1022,6 +1028,7 @@ function eventAttacked(Target, Attacker)
 
 function eventResearched(Research, Herp)
 {
+	debug(me + ":: Research for item " + Research.name + " completed.");
 	for (R in Ratios)
 	{
 		if (Ratios[R].Trigger == Research.name)
