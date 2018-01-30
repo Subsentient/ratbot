@@ -132,7 +132,7 @@ var AP_TankTemplates = new Array(
 				[body_Viper, prop_Halftracks, "MG1Mk1"],
 				[body_Viper, prop_Wheels, "MG1Mk1"]);
 
-///Borg templates.
+
 var AT_BorgTemplates = new Array(
 				["Cyb-Hvybod-RailGunner", "CyborgLegs", "Cyb-Hvywpn-RailGunner"], 
 				["Cyb-Bod-Rail1", "CyborgLegs", "Cyb-Wpn-Rail1"],
@@ -146,7 +146,24 @@ var AP_BorgTemplates = new Array(
 				["Cyb-Bod-Las1", "CyborgLegs", "Cyb-Wpn-Laser"],
 				["CybRotMgGrd", "CyborgLegs", "CyborgRotMG"],
 				["CyborgChain1Ground", "CyborgLegs", "CyborgChaingun"]);
-				
+
+///Borg templates for v3.2+
+
+if(version == "3.2"){
+	AT_BorgTemplates = new Array(
+		["CyborgLightBody", "CyborgLegs", "Cyb-Hvywpn-RailGunner"], 
+		["CyborgLightBody", "CyborgLegs", "Cyb-Wpn-Rail1"],
+		["CyborgLightBody", "CyborgLegs", "Cyb-Hvywpn-Acannon"],
+		["CyborgLightBody", "CyborgLegs", "Cyb-Hvywpn-HPV"],
+		["CyborgLightBody", "CyborgLegs", "Cyb-Hvywpn-Mcannon"],
+		["CyborgLightBody", "CyborgLegs", "CyborgCannon"]);
+
+	AP_BorgTemplates = new Array(
+		["CyborgLightBody", "CyborgLegs", "Cyb-Hvywpn-PulseLsr"],
+		["CyborgLightBody", "CyborgLegs", "Cyb-Wpn-Laser"],
+		["CyborgLightBody", "CyborgLegs", "CyborgRotMG"],
+		["CyborgLightBody", "CyborgLegs", "CyborgChaingun"]);
+}
 var Ratios = new Array(
 					new UnitRatio("R-Cyborg-Hvywpn-Mcannon", [0], null, [0], null, 1, 1), //Superborg and up, pure AT
 					new UnitRatio("R-Wpn-Cannon4AMk1", [0], null, [0], [1], 1, 2), //In case med cannon comes before hpv etc
@@ -511,7 +528,7 @@ function OrderModuleBuild(BaseStructure)
 	
 	for (var Inc = 0; Inc < Truckles.length; ++Inc)
 	{
-		orderDroidStatsLoc(Truckles[Inc], DORDER_BUILD, Module, BaseStructure.x, BaseStructure.y);
+		orderDroidBuild(Truckles[Inc], DORDER_BUILD, Module, BaseStructure.x, BaseStructure.y);
 	}
 	
 	return true;
@@ -649,7 +666,7 @@ function BuildOils()
 			if (Trucky == null) return false;
 			
 			
-			orderDroidStatsLoc(Trucky, DORDER_BUILD, baseStruct_Derrick, Oils[Inc].x, Oils[Inc].y);
+			orderDroidBuild(Trucky, DORDER_BUILD, baseStruct_Derrick, Oils[Inc].x, Oils[Inc].y);
 			return true;
 		
 		}
@@ -670,7 +687,7 @@ function OrderBaseBuild(StructureType)
 	
 	for (var Inc = 0; Inc < Truckles.length; ++Inc)
 	{
-		orderDroidStatsLoc(Truckles[Inc], DORDER_BUILD, StructureType, Location.x, Location.y);
+		orderDroidBuild(Truckles[Inc], DORDER_BUILD, StructureType, Location.x, Location.y);
 	}
 	
 	return true;
