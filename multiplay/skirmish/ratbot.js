@@ -92,6 +92,8 @@ var TruckTemplates = new Array(
 
 ///Tank pre-templates.
 var AT_TankTemplates = new Array(
+				[body_Dragon, prop_Tracks, "Laser4-PlasmaCannon", "Laser4-PlasmaCannon"],
+				[body_Dragon, prop_Tracks, "RailGun3Mk1", "RailGun3Mk1"],
 				[body_Vengeance, prop_Tracks, "RailGun3Mk1"],
 				[body_Tiger, prop_Halftracks, "RailGun3Mk1"],
 				[body_Tiger, prop_Halftracks, "RailGun2Mk1"],
@@ -115,6 +117,11 @@ var AT_TankTemplates = new Array(
 				[body_Viper, prop_Wheels, "Cannon1Mk1"]);
 				
 var AP_TankTemplates = new Array(
+				[body_Dragon, prop_Tracks, "HeavyLaser", "HeavyLaser"],
+				[body_Dragon, prop_Tracks, "Laser2PULSEMk1", "Laser2PULSEMk1"],
+				[body_Wyvern, prop_Tracks, "HeavyLaser"],
+				[body_Wyvern, prop_Tracks, "Laser2PULSEMk1"],
+				[body_Vengeance, prop_Tracks, "HeavyLaser"],
 				[body_Vengeance, prop_Tracks, "Laser2PULSEMk1"],
 				[body_Vengeance, prop_Tracks, "MG5TWINROTARY"],
 				[body_Tiger, prop_Halftracks, "MG5TWINROTARY"],
@@ -131,6 +138,17 @@ var AP_TankTemplates = new Array(
 				[body_Viper, prop_Wheels, "MG2Mk1"],
 				[body_Viper, prop_Halftracks, "MG1Mk1"],
 				[body_Viper, prop_Wheels, "MG1Mk1"]);
+
+var AA_TankTemplates = new Array(
+				[body_Dragon, prop_Tracks, "AAGunLaser", "AAGunLaser"],
+				[body_Wyvern, prop_Tracks, "AAGunLaser"],
+				[body_Wyvern, prop_Tracks, "Missile-HvySAM"],
+				[body_Vengeance, prop_Tracks, "AAGunLaser"],
+				[body_Vengeance, prop_Tracks, "Missile-HvySAM"],
+				[body_Vengeance, prop_Tracks, "Missile-LtSAM"],
+				[body_Vengeance, prop_Tracks, "QuadRotAAGun"],
+				[body_Tiger, prop_Tracks, "QuadRotAAGun"],
+				[body_Mantis, prop_Tracks, "QuadMg1AAGun"]);
 
 
 var AT_BorgTemplates = new Array(
@@ -175,11 +193,12 @@ var CurrentRatio = new UnitRatio(null, null, [0], null, [0], 1, 1); //Trigger we
 
 
 
-function UnitRatio(Trigger, TankAT, TankAP, BorgAT, BorgAP, TankLimit, BorgLimit)
+function UnitRatio(Trigger, TankAT, TankAP, TankAA, BorgAT, BorgAP, TankLimit, BorgLimit)
 {
 	this.Trigger = Trigger; //The weapon that triggers the unit ratio update.
 	this.TankAT = TankAT; //The numbers that will occur in TankLimit and BorgLimit that indicate we want an AT unit.
 	this.TankAP = TankAP; //The numbers that will occur in TankLimit and BorgLimit that indicate we want an AP unit.
+	this.TankAP = TankAA; //The numbers that will occur in TankLimit and BorgLimit that indicate we want an AA unit.
 	this.BorgAT = BorgAT; // ^ See above
 	this.BorgAP = BorgAP;
 	this.TankLimit = TankLimit; //The number of "cycles" we're going to use to produce the desired ratio of AT to AP units.
@@ -808,6 +827,23 @@ function MakeTanks()
 				{
 					var TemplateName = AP_TankTemplates[T][2] + " " + AP_TankTemplates[T][0] + " " + AP_TankTemplates[T][1];
 					if (buildDroid(Facs[Fac], TemplateName, AP_TankTemplates[T][0], AP_TankTemplates[T][1], "", DROID_WEAPON, AP_TankTemplates[T][2]))
+					{	
+						++CurrentRatio.TankInc;
+						break;
+					}
+				}
+				
+				break;
+			}
+		}
+		for (E in CurrentRatio.TankAA)
+		{
+			if (CurrentRatio.TankInc === CurrentRatio.TankAA[E])
+			{
+				for (T in AA_TankTemplates)
+				{
+					var TemplateName = AA_TankTemplates[T][2] + " " + AA_TankTemplates[T][0] + " " + AA_TankTemplates[T][1];
+					if (buildDroid(Facs[Fac], TemplateName, AA_TankTemplates[T][0], AA_TankTemplates[T][1], "", DROID_WEAPON, AA_TankTemplates[T][2]))
 					{	
 						++CurrentRatio.TankInc;
 						break;
