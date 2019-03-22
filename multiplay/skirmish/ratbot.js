@@ -149,7 +149,7 @@ var AP_BorgTemplates = new Array(
 
 ///Borg templates for v3.2+
 
-if(version == "3.2"){
+if(version != "3.1"){
 	AT_BorgTemplates = new Array(
 		["CyborgLightBody", "CyborgLegs", "Cyb-Hvywpn-RailGunner"], 
 		["CyborgLightBody", "CyborgLegs", "Cyb-Wpn-Rail1"],
@@ -723,7 +723,9 @@ function MakeTrucks(IsBorgFac)
 		
 		if (IsBorgFac)
 		{
-			if (buildDroid(Facs[Inc], "Combat Engineer", "Cyb-Bod-ComEng", "CyborgLegs", "", DROID_CYBORG_CONSTRUCT, "CyborgSpade"))
+			var _body = "Cyb-Bod-ComEng";
+			if(version != "3.1") _body = "CyborgLightBody";
+			if (buildDroid(Facs[Inc], "Combat Engineer", _body, "CyborgLegs", "", DROID_CYBORG_CONSTRUCT, "CyborgSpade"))
 			{
 				++TrucksBeingMade;
 				continue;
@@ -835,7 +837,7 @@ function ResearchSomething(Lab)
 	{
 		if ((Worked = pursueResearch(Lab, ResearchPath[Inc])))
 		{
-			debug(me + ":: Research for item " + ResearchPath[Inc] + " started");
+//			debug(me + ":: Research for item " + ResearchPath[Inc] + " started");
 			break;
 		}
 	}
@@ -1045,12 +1047,12 @@ function eventAttacked(Target, Attacker)
 
 function eventResearched(Research, Herp)
 {
-	debug(me + ":: Research for item " + Research.name + " completed.");
+//	debug(me + ":: Research for item " + Research.name + " completed.");
 	for (R in Ratios)
 	{
 		if (Ratios[R].Trigger == Research.name)
 		{
-			debug("Event updated ratio to " + Ratios[R].Trigger);
+//			debug("Event updated ratio to " + Ratios[R].Trigger);
 			CurrentRatio = Ratios[R];
 		}
 	}
