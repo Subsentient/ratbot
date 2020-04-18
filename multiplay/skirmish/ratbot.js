@@ -66,6 +66,7 @@ const COMP_WEAPON = 8;
 var TrucksBeingMade = 0; //The number of trucks currently in production.
 var HadExtraTrucks = false; //If we started with more than 15 trucks, as some maps do.
 var EnemyNearBase = false; //Whether there's enemy units near our base.
+var EnableTargetSeparation = false;
 
 /**//*AFTER THIS IS STUFF THAT CAN CHANGE.*//**/
 
@@ -159,6 +160,8 @@ var Ratios = new Array(
 var CurrentRatio = new UnitRatio(null, null, [0], null, [0], 1, 1); //Trigger weapon doesn't matter for the first ratio.
 
 
+var IsATWeapon = {};
+
 
 function UnitRatio(Trigger, TankAT, TankAP, BorgAT, BorgAP, TankLimit, BorgLimit)
 {
@@ -182,6 +185,62 @@ function ResearchStage(Trigger, TechArray)
 	this.Appended = false;
 }
 
+function CheckTargetSeparation()
+{
+	var Droids = enumDroid(me, DROID_ANY);
+	
+	var NumAT = 0;
+	var NumAP = 0;
+	var CutoffPercentage = 25.0;
+	
+	for (D in Droids)
+	{
+		if (Droids[D].droidType == DROID_CONSTRUCT) continue;
+		
+		if (IsAntiTank(Droids[D])) ++NumAT;
+		else ++NumAP;
+	}
+	
+	var OldValue = EnableTargetSeparation;
+	
+	EnableTargetSeparation = NumAT > NumAP ? ((NumAP / NumAT) * 100 > CutoffPercentage) : ((NumAT / NumAP) * 100 > CutoffPercentage);
+	
+	if (EnableTargetSeparation != OldValue)
+	{
+		debug("RatBot has " + (EnableTargetSeparation ? "enabled" : "disabled") + " target separation");
+	}
+}
+
+function PopulateWeaponTypes()
+{
+	for (Tmp in AT_TankTemplates)
+	{
+		IsATWeapon[AT_TankTemplates[Tmp][2]] = true;
+	}
+	for (Tmp in AT_BorgTemplates)
+	{
+		IsATWeapon[AT_BorgTemplates[Tmp][2]] = true;
+	}
+	for (Tmp in AP_TankTemplates)
+	{
+		IsATWeapon[AP_TankTemplates[Tmp][2]] = false;
+	}
+	for (Tmp in AP_BorgTemplates)
+	{
+		IsATWeapon[AP_BorgTemplates[Tmp][2]] = false;
+	}
+}
+
+function IsAntiBorg(Droid)
+{
+	return !IsATWeapon[Droid.weapons[0].name];
+}
+
+function IsAntiTank(Droid)
+{
+	return IsATWeapon[Droid.weapons[0].name];
+}
+
 function ManageResearchStages()
 {
 	for (S in ResearchStages)
@@ -199,7 +258,7 @@ function ManageResearchStages()
 	}
 }
 
-function AttackTarget(TargetObject, UnitList)
+function AttackTarget(TargetObject, UnitList, ForceAttack)
 {
 	for (D2 in UnitList)
 	{
@@ -209,6 +268,19 @@ function AttackTarget(TargetObject, UnitList)
 		if (!droidCanReach(UnitList[D2], TargetObject.x, TargetObject.y)) continue;
 		
 		//In range for an attack.
+
+		//Fire on the appropriate type of unit wherever possible.
+		if (EnableTargetSeparation &&
+			!ForceAttack &&
+			TargetObject.type == DROID &&
+			(TargetObject.droidType != DROID_CYBORG &&
+			IsAntiBorg(UnitList[D2])) ||
+			(TargetObject.droidType == DROID_CYBORG &&
+			IsAntiTank(UnitList[D2])))
+		{
+			continue;
+		}
+		
 		if (orderDroidObj(UnitList[D2], DORDER_ATTACK, TargetObject)) continue;
 		
 		orderDroidLoc(UnitList[D2], DORDER_MOVE, TargetObject.x, TargetObject.y);
@@ -237,7 +309,7 @@ function WatchForEnemies()
 			}
 			
 			FoundOne = true;
-			AttackTarget(EnemyDroids[D], Droids);
+			AttackTarget(EnemyDroids[D], Droids, true);
 			
 			break;
 		}
@@ -720,9 +792,7 @@ function MakeTrucks(IsBorgFac)
 		
 		if (IsBorgFac)
 		{
-			var _body = "Cyb-Bod-ComEng";
-			if(version != "3.1") _body = "CyborgLightBody";
-			if (buildDroid(Facs[Inc], "Combat Engineer", _body, "CyborgLegs", "", DROID_CYBORG_CONSTRUCT, "CyborgSpade"))
+			if (buildDroid(Facs[Inc], "Combat Engineer", "CyborgLightBody", "CyborgLegs", "", DROID_CYBORG_CONSTRUCT, "CyborgSpade"))
 			{
 				++TrucksBeingMade;
 				continue;
@@ -822,6 +892,7 @@ function MakeTanks()
 
 function eventGameInit()
 {
+	PopulateWeaponTypes();
 }
 
 function ResearchSomething(Lab)
@@ -984,15 +1055,16 @@ function eventStartLevel()
 	
 	UpdateRatios();
 	
-	setTimer("DoAllResearch", 1000);
-	setTimer("MakeTanks", 700);
-	setTimer("MakeBorgs", 700);
-	setTimer("WorkOnBase", 700);
+	setTimer("DoAllResearch", 500);
+	setTimer("MakeTanks", 300);
+	setTimer("MakeBorgs", 300);
+	setTimer("WorkOnBase", 300);
 	setTimer("WatchForEnemies", 1000);
 	setTimer("PerformAttack", 7000);
 	setTimer("UpdateRatios", 3000);
-	setTimer("FinishHalfBuilds", 7000);
-	setTimer("ManageResearchStages", 10000);
+	setTimer("FinishHalfBuilds", 5000);
+	setTimer("ManageResearchStages", 5000);
+	setTimer("CheckTargetSeparation", 10000);
 }
 
 function UpdateRatios()
@@ -1039,7 +1111,7 @@ function eventAttacked(Target, Attacker)
 	
 	if (!Droids || !Droids.length) return;
 	
-	AttackTarget(Attacker, Droids);
+	AttackTarget(Attacker, Droids, false);
 }
 
 function eventResearched(Research, Herp)
