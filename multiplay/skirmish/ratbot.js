@@ -186,7 +186,7 @@ function GetCurrentBorgATPercent()
 	
 	for (D in Droids)
 	{
-		if (Droids[D].droidType != DROID_CYBORG) continue;
+		if (Droids[D].droidType !== DROID_CYBORG) continue;
 		
 		if (IsAntiTank(Droids[D])) ++NumAT;
 		
@@ -207,7 +207,7 @@ function GetCurrentTankATPercent()
 	
 	for (D in Droids)
 	{
-		if (Droids[D].droidType != DROID_WEAPON) continue;
+		if (Droids[D].droidType !== DROID_WEAPON) continue;
 		
 		if (IsAntiTank(Droids[D])) ++NumAT;
 		
@@ -239,7 +239,7 @@ function CheckTargetSeparation()
 	
 	for (D in Droids)
 	{
-		if (Droids[D].droidType == DROID_CONSTRUCT) continue;
+		if (Droids[D].droidType === DROID_CONSTRUCT | Droids[D].droidType === DROID_CYBORG_CONSTRUCT) continue;
 		
 		if (IsAntiTank(Droids[D])) ++NumAT;
 		else ++NumAP;
@@ -306,8 +306,8 @@ function AttackTarget(TargetObject, UnitList, ForceAttack)
 {
 	for (D2 in UnitList)
 	{
-		if (UnitList[D2].droidType == DROID_CONSTRUCT ||
-			UnitList[D2].droidType == DROID_CYBORG_CONSTRUCT) continue;
+		if (UnitList[D2].droidType === DROID_CONSTRUCT ||
+			UnitList[D2].droidType === DROID_CYBORG_CONSTRUCT) continue;
 		
 		if (!droidCanReach(UnitList[D2], TargetObject.x, TargetObject.y)) continue;
 		
@@ -337,13 +337,13 @@ function WatchForEnemies()
 	
 	for (var Inc = 0; Inc < maxPlayers; ++Inc)
 	{
-		if (allianceExistsBetween(me, Inc) || Inc == me) continue;
+		if (allianceExistsBetween(me, Inc) || Inc === me) continue;
 		
 		var EnemyDroids = enumRange(startPositions[me].x, startPositions[me].y, MaxWatchingDistance, ENEMIES, false);		
 		
 		for (D in EnemyDroids)
 		{
-			if (EnemyDroids[D].type != DROID && EnemyDroids[D].type != STRUCTURE) continue;
+			if (EnemyDroids[D].type !== DROID && EnemyDroids[D].type !== STRUCTURE) continue;
 			
 			var Droids = enumDroid(me, DROID_ANY);
 			
@@ -353,7 +353,7 @@ function WatchForEnemies()
 			}
 			
 			FoundOne = true;
-			AttackTarget(EnemyDroids[D], Droids, true);
+			AttackTarget(EnemyDroids[D], Droids, false);
 			
 			break;
 		}
@@ -373,13 +373,16 @@ function ChooseEnemy()
 	//Enumerate all enemies we have.
 	for (var Inc = 0; Inc < maxPlayers; ++Inc)
 	{
+		//Never attack while someone is superior, sit and build up our forces instead.
+		if (WeAreWeaker(Inc)) return null;
+		
 		var EnemyStructs = enumCriticalStructs(Inc);
-		var EnemyDroids = enumDroid(Inc);
+		var EnemyDroids = enumDroid(Inc, DROID_ANY);
 		
 		var OurDroids = enumDroid(me, DROID_ANY);
 		
-		if (!WeAreWeaker(Inc) && (EnemyDroids.length || EnemyStructs.length) && !allianceExistsBetween(me, Inc) &&
-			Inc != me && droidCanReach(OurDroids[0], startPositions[Inc].x, startPositions[Inc].y))
+		if ((EnemyDroids.length || EnemyStructs.length) && !allianceExistsBetween(me, Inc) &&
+			Inc !== me && droidCanReach(OurDroids[0], startPositions[Inc].x, startPositions[Inc].y))
 		{
 			Enemies.push(Inc);
 		}
@@ -444,13 +447,13 @@ function PerformAttack()
 	
 	for (D in Droids)
 	{ //Our attack droids.
-		if (Droids[D].droidType == DROID_CYBORG_CONSTRUCT || Droids[D].droidType == DROID_CONSTRUCT) continue;
+		if (Droids[D].droidType === DROID_CYBORG_CONSTRUCT || Droids[D].droidType === DROID_CONSTRUCT) continue;
 		++OurAttackDroids;
 	}
 	
 	for (D in EnemyDroids)
 	{ //Enemy attack droids.
-		if (EnemyDroids[D].droidType == DROID_CYBORG_CONSTRUCT || EnemyDroids[D].droidType == DROID_CONSTRUCT) continue;
+		if (EnemyDroids[D].droidType === DROID_CYBORG_CONSTRUCT || EnemyDroids[D].droidType === DROID_CONSTRUCT) continue;
 		++EnemyAttackDroids;
 	}
 	
@@ -465,7 +468,7 @@ function PerformAttack()
 		{
 			var AttackStructure = Math.floor(Math.random()*2); //Boolean
 			
-			if (Droids[Droid].droidType == DROID_CONSTRUCT || Droids[Droid].droidType == DROID_CYBORG_CONSTRUCT) continue;
+			if (Droids[Droid].droidType === DROID_CONSTRUCT || Droids[Droid].droidType === DROID_CYBORG_CONSTRUCT) continue;
 			
 			if (AttackStructure)
 			{
@@ -485,7 +488,7 @@ function PerformAttack()
 	{ ///They got an army, just send a fuckton to their base.
 		for (Droid in Droids)
 		{
-			if (Droids[Droid].droidType == DROID_CONSTRUCT || Droids[Droid].droidType == DROID_CYBORG_CONSTRUCT)
+			if (Droids[Droid].droidType === DROID_CONSTRUCT || Droids[Droid].droidType === DROID_CYBORG_CONSTRUCT)
 			{
 				continue;
 			}
@@ -595,7 +598,7 @@ function FindTrucks(Requested, StealOk)
 		
 		TruckList.push(Known[Inc]);
 		
-		if (Requested != undefined && TruckList.length == Requested) break;
+		if (Requested !== undefined && TruckList.length === Requested) break;
 	}
 	
 	if (!TruckList.length) return null;
@@ -724,7 +727,7 @@ function GrabOilTrucks()
 	{
 		if (!Needed) return;
 		
-		if (Droids[D].droidType == DROID_CONSTRUCT || Droids[D].droidType == DROID_CYBORG_CONSTRUCT)
+		if (Droids[D].droidType === DROID_CONSTRUCT || Droids[D].droidType === DROID_CYBORG_CONSTRUCT)
 		{
 			groupAddDroid(OilTrucks, Droids[D]);
 			--Needed;
@@ -817,7 +820,7 @@ function MakeTrucks(IsBorgFac)
 	
 	for (var Inc = 0; Inc < Facs.length && Inc < 15 - Trucks.length; ++Inc)
 	{
-		if (!structureIdle(Facs[Inc]) || Facs[Inc].status != BUILT) continue;
+		if (!structureIdle(Facs[Inc]) || Facs[Inc].status !== BUILT) continue;
 		
 		if (IsBorgFac)
 		{
@@ -851,7 +854,7 @@ function UnitInGroup(GroupID, Droid)
 	
 	for (G in Group)
 	{
-		if (Group[G].id == Droid.id)
+		if (Group[G].id === Droid.id)
 		{
 			return true;
 		}
@@ -934,7 +937,7 @@ function DoAllResearch()
 	
 	for (var Inc = 0; Inc < Researches.length; ++Inc)
 	{
-		if (Researches[Inc].status == BEING_BUILT) continue;
+		if (Researches[Inc].status === BEING_BUILT) continue;
 
 		ResearchSomething(Researches[Inc]);
 	}
@@ -946,7 +949,7 @@ function FreeOilTrucks()
 	
 	for (G in Droids)
 	{
-		if (Droids[G].droidType == DROID_CONSTRUCT || Droids[G].droidType == DROID_CYBORG_CONSTRUCT)
+		if (Droids[G].droidType === DROID_CONSTRUCT || Droids[G].droidType === DROID_CYBORG_CONSTRUCT)
 		{
 			groupAddDroid(NonOilTrucks, Droids[G]);
 		}
@@ -1061,6 +1064,23 @@ function WorkOnBase()
 	}
 }
 
+function CheckNeedRecycle()
+{
+	var Droids = enumDroid(me, DROID_ANY);
+	
+	if (Droids.length !== 150) return; //Nothing to do.
+	
+	rbdebug("At unit limit. Recycling 10 attack units.");
+	
+	for (var Dec = Droids.length - 1; Dec >= Droids.length - 11; --Dec)
+	{
+		if (Droids[Dec].droidType !== DROID_WEAPON && Droids[Dec].droidType !== DROID_CYBORG) continue;
+		
+		orderDroid(Droids[Dec], DORDER_RECYCLE);
+	}
+}
+
+
 function eventStartLevel()
 {
 	OilTrucks = newGroup();
@@ -1077,6 +1097,7 @@ function eventStartLevel()
 	setTimer("WatchForEnemies", 1000);
 	setTimer("PerformAttack", 7000);
 	setTimer("UpdateRatios", 3000);
+	setTimer("CheckNeedRecycle", 20000);
 	setTimer("FinishHalfBuilds", 5000);
 	setTimer("ManageResearchStages", 5000);
 	setTimer("CheckTargetSeparation", 5000);
@@ -1100,7 +1121,7 @@ function UpdateRatios()
 
 function eventDroidBuilt(droid, fac1)
 {
-	if (droid.droidType == DROID_CONSTRUCT || droid.droidType == DROID_CYBORG_CONSTRUCT)
+	if (droid.droidType === DROID_CONSTRUCT || droid.droidType === DROID_CYBORG_CONSTRUCT)
 	{
 		--TrucksBeingMade;
 	}
