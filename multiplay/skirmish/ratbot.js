@@ -71,10 +71,10 @@ var EnemyNearBase = false; //Whether there's enemy units near our base.
 
 
 ///Research path.
-var ResearchPath = ["R-Vehicle-Engine01", "R-Wpn-Cannon1Mk1", "R-Vehicle-Prop-Halftracks", "R-Vehicle-Body05",
-					"R-Vehicle-Body11", "R-Struc-Research-Upgrade09","R-Wpn-Cannon4AMk1",
+var ResearchPath = ["R-Vehicle-Engine01", "R-Wpn-Cannon1Mk1", "R-Vehicle-Prop-Halftracks", "R-Struc-Research-Module", "R-Vehicle-Body05",
+					"R-Wpn-Cannon4AMk1", "R-Struc-Factory-Upgrade01", "R-Wpn-Mortar01Lt", "R-Vehicle-Body11", "R-Struc-Research-Upgrade09",
 					"R-Wpn-RailGun03", "R-Vehicle-Metals04", "R-Cyborg-Metals04",
-					"R-Struc-Factory-Upgrade09", "R-Cyborg-Hvywpn-Mcannon", "R-Wpn-MG2Mk1" ];
+					"R-Struc-Factory-Upgrade09", "R-Cyborg-Hvywpn-Mcannon", "R-Wpn-MG2Mk1", "R-Wpn-Mortar-Damage02" ];
 
 ///Expanded research path triggered when a piece of tech becomes available.
 var ResearchStages = new Array(
@@ -144,13 +144,15 @@ var AT_BorgTemplates = new Array(
 var AP_BorgTemplates = new Array(
 	["CyborgLightBody", "CyborgLegs", "Cyb-Hvywpn-PulseLsr"],
 	["CyborgLightBody", "CyborgLegs", "Cyb-Wpn-Laser"],
+	["CyborgLightBody", "CyborgLegs", "Cyb-Wpn-Grenade"],
 	["CyborgLightBody", "CyborgLegs", "CyborgRotMG"],
 	["CyborgLightBody", "CyborgLegs", "CyborgChaingun"]);
 		
 var Ratios = new Array(
 					new UnitRatio("R-Cyborg-Hvywpn-Mcannon", [0], null, [0], null, 1, 1), //Superborg and up, pure AT
-					new UnitRatio("R-Wpn-Cannon4AMk1", [0], null, [0], [1], 1, 2), //In case med cannon comes before hpv etc
-					new UnitRatio("R-Wpn-Cannon2Mk1", [0], null, [0], [1], 1, 2), //Medium cannon and up, pure cannon tanks, 50/50 borgs
+					new UnitRatio("R-Wpn-Cannon4AMk1", [0], null, null, [0], 1, 1), //In case med cannon comes before hpv etc
+					new UnitRatio("R-Wpn-Cannon2Mk1", [0], null, null, [0], 1, 1), //Medium cannon and up, pure cannon tanks, pure mg borgs
+					new UnitRatio("R-Wpn-Mortar01Lt", [0, 1], [2], null, [0], 3, 1), //With mortar, 2 cannons for every mg tank, and mortar borg spam.
 					new UnitRatio("R-Wpn-Cannon1Mk1", [0], [1], [0], [1], 2, 2) //With light cannon, 50/50 tanks and 50/50 borgs
 					);
 
