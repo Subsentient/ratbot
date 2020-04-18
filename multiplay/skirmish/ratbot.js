@@ -65,19 +65,22 @@ const COMP_WEAPON = 8;
 
 var TrucksBeingMade = 0; //The number of trucks currently in production.
 var HadExtraTrucks = false; //If we started with more than 15 trucks, as some maps do.
+var EnemyNearBase = false; //Whether there's enemy units near our base.
 
 /**//*AFTER THIS IS STUFF THAT CAN CHANGE.*//**/
 
 
 ///Research path.
-var ResearchPath = ["R-Vehicle-Engine01", "R-Wpn-Cannon1Mk1", "R-Vehicle-Prop-Halftracks", "R-Vehicle-Body05", "R-Vehicle-Body11", "R-Struc-Research-Upgrade09","R-Wpn-Cannon4AMk1",
-					"R-Wpn-RailGun03", "R-Wpn-Cannon6TwinAslt", "R-Vehicle-Metals04", "R-Cyborg-Metals04", "R-Cyborg-Hvywpn-Mcannon",
-					"R-Wpn-MG2Mk1" ];
+var ResearchPath = ["R-Vehicle-Engine01", "R-Wpn-Cannon1Mk1", "R-Vehicle-Prop-Halftracks", "R-Vehicle-Body05",
+					"R-Vehicle-Body11", "R-Struc-Research-Upgrade09","R-Wpn-Cannon4AMk1",
+					"R-Wpn-RailGun03", "R-Vehicle-Metals04", "R-Cyborg-Metals04",
+					"R-Struc-Factory-Upgrade09", "R-Cyborg-Hvywpn-Mcannon", "R-Wpn-MG2Mk1" ];
 
 ///Expanded research path triggered when a piece of tech becomes available.
 var ResearchStages = new Array(
-					new ResearchStage("R-Cyborg-Hvywpn-Mcannon", ["R-Vehicle-Body09", "R-Cyborg-Hvywpn-Acannon", "R-Struc-Power-Upgrade03a",
-									"R-Struc-Factory-Upgrade09", "R-Cyborg-Metals09","R-Vehicle-Metals09"]),
+					new ResearchStage("R-Cyborg-Hvywpn-Mcannon", ["R-Vehicle-Body09", "R-Cyborg-Hvywpn-HPV",
+									"R-Wpn-Cannon-ROF03", "R-Struc-Power-Upgrade03a", "R-Struc-Factory-Upgrade09", "R-Wpn-RailGun03",
+									"R-Cyborg-Metals09","R-Vehicle-Metals09"]),
 					new ResearchStage("R-Wpn-Rail-Damage02", ["R-Cyborg-Hvywpn-RailGunner", "R-Vehicle-Prop-Tracks", "R-Vehicle-Body10",
 									"R-Sys-Autorepair-General", "R-Struc-Materials09", "R-Sys-Sensor-UpLink"])
 					);
@@ -99,15 +102,14 @@ var AT_TankTemplates = new Array(
 				[body_Tiger, prop_Halftracks, "RailGun1Mk1"],
 				[body_Mantis, prop_Tracks, "RailGun1Mk1"],
 				[body_Python, prop_Halftracks, "RailGun1Mk1"],
+				[body_Tiger, prop_Halftracks, "Cannon6TwinAslt"],
 				[body_Mantis, prop_Tracks, "Cannon6TwinAslt"],
 				[body_Python, prop_Halftracks, "Cannon6TwinAslt"],
 				[body_Mantis, prop_Halftracks, "Cannon375mmMk1"],
-				[body_Python, prop_Halftracks, "Cannon375mmMk1"],
-				[body_Mantis, prop_Tracks, "Cannon5VulcanMk1"],
-				[body_Python, prop_Halftracks, "Cannon5VulcanMk1"],
+				[body_Tiger, prop_Halftracks, "Cannon4AUTOMk1"],
 				[body_Mantis, prop_Tracks, "Cannon4AUTOMk1"],
-				[body_Python, prop_Halftracks, "Cannon4AUTOMk1"],
-				[body_Python, prop_Halftracks, "Cannon2A-TMk1"],
+				///Current gameplay balance makes Cobra superior for this due to production rates.
+				//[body_Python, prop_Halftracks, "Cannon4AUTOMk1"],
 				[body_Cobra, prop_Halftracks, "Cannon4AUTOMk1"],
 				[body_Cobra, prop_Halftracks, "Cannon2A-TMk1"],
 				[body_Cobra, prop_Halftracks, "Cannon1Mk1"],
@@ -132,38 +134,19 @@ var AP_TankTemplates = new Array(
 				[body_Viper, prop_Halftracks, "MG1Mk1"],
 				[body_Viper, prop_Wheels, "MG1Mk1"]);
 
-
 var AT_BorgTemplates = new Array(
-				["Cyb-Hvybod-RailGunner", "CyborgLegs", "Cyb-Hvywpn-RailGunner"], 
-				["Cyb-Bod-Rail1", "CyborgLegs", "Cyb-Wpn-Rail1"],
-				["Cyb-Hvybod-Acannon", "CyborgLegs", "Cyb-Hvywpn-Acannon"],
-				["Cyb-Hvybod-HPV", "CyborgLegs", "Cyb-Hvywpn-HPV"],
-				["Cyb-Hvybod-Mcannon", "CyborgLegs", "Cyb-Hvywpn-Mcannon"],
-				["CyborgCannonGrd", "CyborgLegs", "CyborgCannon"]);
+	["CyborgLightBody", "CyborgLegs", "Cyb-Hvywpn-RailGunner"], 
+	["CyborgLightBody", "CyborgLegs", "Cyb-Wpn-Rail1"],
+	["CyborgLightBody", "CyborgLegs", "Cyb-Hvywpn-HPV"],
+	["CyborgLightBody", "CyborgLegs", "Cyb-Hvywpn-Mcannon"],
+	["CyborgLightBody", "CyborgLegs", "CyborgCannon"]);
 
 var AP_BorgTemplates = new Array(
-				["Cyb-Hvybod-PulseLsr", "CyborgLegs", "Cyb-Hvywpn-PulseLsr"],
-				["Cyb-Bod-Las1", "CyborgLegs", "Cyb-Wpn-Laser"],
-				["CybRotMgGrd", "CyborgLegs", "CyborgRotMG"],
-				["CyborgChain1Ground", "CyborgLegs", "CyborgChaingun"]);
-
-///Borg templates for v3.2+
-
-if(version != "3.1"){
-	AT_BorgTemplates = new Array(
-		["CyborgLightBody", "CyborgLegs", "Cyb-Hvywpn-RailGunner"], 
-		["CyborgLightBody", "CyborgLegs", "Cyb-Wpn-Rail1"],
-		["CyborgLightBody", "CyborgLegs", "Cyb-Hvywpn-Acannon"],
-		["CyborgLightBody", "CyborgLegs", "Cyb-Hvywpn-HPV"],
-		["CyborgLightBody", "CyborgLegs", "Cyb-Hvywpn-Mcannon"],
-		["CyborgLightBody", "CyborgLegs", "CyborgCannon"]);
-
-	AP_BorgTemplates = new Array(
-		["CyborgLightBody", "CyborgLegs", "Cyb-Hvywpn-PulseLsr"],
-		["CyborgLightBody", "CyborgLegs", "Cyb-Wpn-Laser"],
-		["CyborgLightBody", "CyborgLegs", "CyborgRotMG"],
-		["CyborgLightBody", "CyborgLegs", "CyborgChaingun"]);
-}
+	["CyborgLightBody", "CyborgLegs", "Cyb-Hvywpn-PulseLsr"],
+	["CyborgLightBody", "CyborgLegs", "Cyb-Wpn-Laser"],
+	["CyborgLightBody", "CyborgLegs", "CyborgRotMG"],
+	["CyborgLightBody", "CyborgLegs", "CyborgChaingun"]);
+		
 var Ratios = new Array(
 					new UnitRatio("R-Cyborg-Hvywpn-Mcannon", [0], null, [0], null, 1, 1), //Superborg and up, pure AT
 					new UnitRatio("R-Wpn-Cannon4AMk1", [0], null, [0], [1], 1, 2), //In case med cannon comes before hpv etc
@@ -214,44 +197,57 @@ function ManageResearchStages()
 	}
 }
 
+function AttackTarget(TargetObject, UnitList)
+{
+	for (D2 in UnitList)
+	{
+		if (UnitList[D2].droidType == DROID_CONSTRUCT ||
+			UnitList[D2].droidType == DROID_CYBORG_CONSTRUCT) continue;
+		
+		if (!droidCanReach(UnitList[D2], TargetObject.x, TargetObject.y)) continue;
+		
+		//In range for an attack.
+		if (orderDroidObj(UnitList[D2], DORDER_ATTACK, TargetObject)) continue;
+		
+		orderDroidLoc(UnitList[D2], DORDER_MOVE, TargetObject.x, TargetObject.y);
+	}
+}
+
 function WatchForEnemies()
 {
+	var FoundOne = false;
+	
 	for (var Inc = 0; Inc < maxPlayers; ++Inc)
 	{
 		if (allianceExistsBetween(me, Inc) || Inc == me) continue;
 		
-		var EnemyDroids = enumDroid(Inc, DROID_ANY);
-		
-		if (!EnemyDroids) continue;
+		var EnemyDroids = enumRange(startPositions[me].x, startPositions[me].y, MaxWatchingDistance, ENEMIES, false);		
 		
 		for (D in EnemyDroids)
 		{
-			if (MaxWatchingDistance > distBetweenTwoPoints(startPositions[me].x, startPositions[me].y, EnemyDroids[D].x, EnemyDroids[D].y))
-			{ //ALERT! Someone is near us!
-				var Droids = enumDroid(me, DROID_ANY);
-				
-				if (!Droids || !Droids.length) return;
-				
-				if (!droidCanReach(Droids[0], EnemyDroids[D].x, EnemyDroids[D].y)) continue;
-				
-				for (D2 in Droids)
-				{
-					if (Droids[D2].droidType == DROID_CONSTRUCT || Droids[D2].droidType == DROID_CYBORG_CONSTRUCT) continue;
-					
-					orderDroidLoc(Droids[D2], DORDER_MOVE, EnemyDroids[D].x, EnemyDroids[D].y);
-				}
-				return;
-			}
+			if (EnemyDroids[D].type != DROID) continue;
+			
+			var Droids = enumDroid(me, DROID_ANY);
+			
+			if (!Droids || !Droids.length) return;
+			
+			FoundOne = true;
+			AttackTarget(EnemyDroids[D], Droids);
+			
+			break;
 		}
 		
 		//We don't watch for structures, because that's expensive and we can simply respond to arty attacks.
 	}
+	
+	EnemyNearBase = FoundOne;
 }
 
 function ChooseEnemy()
 {
-	var Enemies = [];
+	if (EnemyNearBase) return null; //Don't go on a crusade when there's a bad guy nearby.
 	
+	var Enemies = [];
 	
 	//Enumerate all enemies we have.
 	for (var Inc = 0; Inc < maxPlayers; ++Inc)
@@ -630,9 +626,7 @@ function GrabOilTrucks()
 
 function NeedToBuildOils()
 {
-	
 	var Oils = enumFeature(-1, OilPool);
-	
 	
 	for (O in Oils)
 	{
@@ -645,7 +639,6 @@ function NeedToBuildOils()
 	return false;
 }
 
-		
 function BuildOils()
 {
 	var Oils = enumFeature(-1, OilPool);
@@ -654,7 +647,6 @@ function BuildOils()
 	{
 		return false;
 	}
-	
 	
 	for (var Inc = 0; Inc < Oils.length; ++Inc)
 	{
@@ -1030,19 +1022,14 @@ function eventDroidBuilt(droid, fac1)
 
 function eventAttacked(Target, Attacker)
 {
-
-	if (Target.type != STRUCTURE) return;
+	//Account for splash damage
+	if (Attacker.player === me || EnemyNearBase) return;
 	
 	var Droids = enumDroid(me, DROID_ANY);
 	
-	for (Droid in Droids)
-	{
-		//No trucks in the line of fire plz.
-		if (Droids[Droid].droidType == DROID_CONSTRUCT || Droids[Droid].droidType == DROID_CYBORG_CONSTRUCT) continue;
-		
-		//Send him to battle.
-		orderDroidLoc(Droids[Droid], DORDER_MOVE, Attacker.x, Attacker.y);
-	}
+	if (!Droids || !Droids.length) return;
+	
+	AttackTarget(Attacker, Droids);
 }
 
 function eventResearched(Research, Herp)
