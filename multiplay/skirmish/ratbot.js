@@ -225,11 +225,14 @@ function WatchForEnemies()
 		
 		for (D in EnemyDroids)
 		{
-			if (EnemyDroids[D].type != DROID) continue;
+			if (EnemyDroids[D].type != DROID && EnemyDroids[D].type != STRUCTURE) continue;
 			
 			var Droids = enumDroid(me, DROID_ANY);
 			
-			if (!Droids || !Droids.length) return;
+			if (!Droids || !Droids.length || !droidCanReach(Droids[0], EnemyDroids[D].x, EnemyDroids[D].y))
+			{
+				 continue;
+			}
 			
 			FoundOne = true;
 			AttackTarget(EnemyDroids[D], Droids);
@@ -888,7 +891,7 @@ function WorkOnBase()
 	
 	
 	//Basic stuff just to get us going
-	if (Researches.length < 2)
+	if (Researches.length < 3)
 	{
 		OrderBaseBuild(baseStruct_Research);
 	}
@@ -930,14 +933,19 @@ function WorkOnBase()
 	///Modules.
 	if (isStructureAvailable(Module_Research, me))
 	{
+		var FoundOne = false;
+		
 		//Researches
 		for (var Inc = 0; Inc < Researches.length; ++Inc)
 		{
-			if (!Researches[Inc].modules)
+			if (!Researches[Inc].modules || Researches[Inc].status == BEING_BUILT)
 			{
+				FoundOne = true;
 				OrderModuleBuild(Researches[Inc]);
 			}
 		}
+		
+		if (FoundOne) return;
 	}
 	
 	if (isStructureAvailable(Module_Factory, me))
