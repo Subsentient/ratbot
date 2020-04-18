@@ -221,12 +221,12 @@ function GetCurrentTankATPercent()
 
 function ShouldBuildATTank()
 {
-	return CurrentRatio.TankATPercent > GetCurrentTankATPercent();
+	return CurrentRatio.TankATPercent >= GetCurrentTankATPercent();
 }
 
 function ShouldBuildATBorg()
-{
-	return CurrentRatio.BorgATPercent > GetCurrentBorgATPercent();
+{ //le operator is not a typo.
+	return CurrentRatio.BorgATPercent >= GetCurrentBorgATPercent();
 }
 
 function CheckTargetSeparation()
@@ -251,7 +251,7 @@ function CheckTargetSeparation()
 	
 	if (EnableTargetSeparation != OldValue)
 	{
-		debug("RatBot has " + (EnableTargetSeparation ? "enabled" : "disabled") + " target separation");
+		rbdebug((EnableTargetSeparation ? "Enabled" : "Disabled") + " target separation");
 	}
 }
 
@@ -378,7 +378,7 @@ function ChooseEnemy()
 		
 		var OurDroids = enumDroid(me, DROID_ANY);
 		
-		if ((EnemyDroids.length || EnemyStructs.length) && !allianceExistsBetween(me, Inc) &&
+		if (!WeAreWeaker(Inc) && (EnemyDroids.length || EnemyStructs.length) && !allianceExistsBetween(me, Inc) &&
 			Inc != me && droidCanReach(OurDroids[0], startPositions[Inc].x, startPositions[Inc].y))
 		{
 			Enemies.push(Inc);
@@ -1079,7 +1079,7 @@ function eventStartLevel()
 	setTimer("UpdateRatios", 3000);
 	setTimer("FinishHalfBuilds", 5000);
 	setTimer("ManageResearchStages", 5000);
-	setTimer("CheckTargetSeparation", 10000);
+	setTimer("CheckTargetSeparation", 5000);
 }
 
 function UpdateRatios()
@@ -1106,11 +1106,39 @@ function eventDroidBuilt(droid, fac1)
 	}
 }
 
+function WeAreWeaker(OtherPlayer)
+{
+	var OurDroids = enumDroid(me, DROID_ANY);
+	var TheirDroids = enumDroid(OtherPlayer, DROID_ANY);
+	
+	if (OurDroids.length >= TheirDroids.length) return false;
+
+	return (OurDroids.length / TheirDroids.length * 100) < 85; //85% size of enemy force
+}
+
+function OrderRetreat()
+{
+	var Droids = enumDroid(me, DROID_ANY);
+
+	for (D in Droids)
+	{
+		if (Droids[D].droidType == DROID_CONSTRUCT || Droids[D].droidType == DROID_CYBORG_CONSTRUCT) continue;
+		
+		orderDroidLoc(Droids[D], DORDER_MOVE, startPositions[me].x, startPositions[me].y);
+		rbdebug("Retreating");
+	}	
+}
 
 function eventAttacked(Target, Attacker)
 {
 	//Account for splash damage
 	if (Attacker.player === me || EnemyNearBase) return;
+
+	if (WeAreWeaker(Attacker.player))
+	{
+		OrderRetreat();
+		return;
+	}
 	
 	var Droids = enumDroid(me, DROID_ANY);
 	
@@ -1119,14 +1147,20 @@ function eventAttacked(Target, Attacker)
 	AttackTarget(Attacker, Droids, false);
 }
 
+function rbdebug(Msg)
+{
+	debug("RatBot " + me + ":: " + Msg);
+}
+
 function eventResearched(Research, Herp)
 {
-//	debug(me + ":: Research for item " + Research.name + " completed.");
+	rbdebug("Research for item " + Research.name + " completed.");
+	
 	for (R in Ratios)
 	{
 		if (Ratios[R].Trigger == Research.name)
 		{
-//			debug("Event updated ratio to " + Ratios[R].Trigger);
+			rbdebug("Event updated ratio to " + Ratios[R].Trigger);
 			CurrentRatio = Ratios[R];
 		}
 	}
