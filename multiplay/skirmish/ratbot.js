@@ -150,32 +150,24 @@ var AP_BorgTemplates = new Array(
 	["CyborgLightBody", "CyborgLegs", "CyborgChaingun"]);
 		
 var Ratios = new Array(
-					new UnitRatio("R-Cyborg-Hvywpn-Mcannon", [0], null, [0], null, 1, 1), //Superborg and up, pure AT
-					new UnitRatio("R-Wpn-Cannon4AMk1", [0], null, null, [0], 1, 1), //In case med cannon comes before hpv etc
-					new UnitRatio("R-Wpn-Cannon2Mk1", [0], null, null, [0], 1, 1), //Medium cannon and up, pure cannon tanks, pure mg borgs
-					new UnitRatio("R-Wpn-Mortar01Lt", [0, 1], [2], null, [0], 3, 1), //With mortar, 2 cannons for every mg tank, and mortar borg spam.
-					new UnitRatio("R-Wpn-Cannon1Mk1", [0], [1], [0], [1], 2, 2) //With light cannon, 50/50 tanks and 50/50 borgs
+					new UnitRatio("R-Cyborg-Hvywpn-Mcannon", 100.0, 100.0), //Superborg and up, pure AT
+					new UnitRatio("R-Wpn-Cannon4AMk1", 100.0, 0.0), //In case med cannon comes before hpv etc
+					new UnitRatio("R-Wpn-Cannon2Mk1", 100.0, 0.0), //Medium cannon and up, pure cannon tanks, pure mg borgs
+					new UnitRatio("R-Wpn-Mortar01Lt", 66.0, 0.0), //With mortar, 2 cannons for every mg tank, and mortar borg spam.
+					new UnitRatio("R-Wpn-Cannon1Mk1", 50.0, 50.0) //With light cannon, 50/50 tanks and 50/50 borgs
 					);
 
-var CurrentRatio = new UnitRatio(null, null, [0], null, [0], 1, 1); //Trigger weapon doesn't matter for the first ratio.
+var CurrentRatio = new UnitRatio(null, 0.0, 0.0); //Trigger weapon doesn't matter for the first ratio.
 
 
 var IsATWeapon = {};
 
 
-function UnitRatio(Trigger, TankAT, TankAP, BorgAT, BorgAP, TankLimit, BorgLimit)
+function UnitRatio(TriggerTech, TankATPercent, BorgATPercent)
 {
-	this.Trigger = Trigger; //The weapon that triggers the unit ratio update.
-	this.TankAT = TankAT; //The numbers that will occur in TankLimit and BorgLimit that indicate we want an AT unit.
-	this.TankAP = TankAP; //The numbers that will occur in TankLimit and BorgLimit that indicate we want an AP unit.
-	this.BorgAT = BorgAT; // ^ See above
-	this.BorgAP = BorgAP;
-	this.TankLimit = TankLimit; //The number of "cycles" we're going to use to produce the desired ratio of AT to AP units.
-	this.BorgLimit = BorgLimit; //Same as above but for borgs.
-	
-	//This stuff is what we increment, which we reset to zero when TankLimit or BorgLimit is reached.
-	this.TankInc = 0;
-	this.BorgInc = 0;
+	this.TriggerTech = TriggerTech;
+	this.TankATPercent = TankATPercent;
+	this.BorgATPercent = BorgATPercent;
 }
 
 function ResearchStage(Trigger, TechArray)
@@ -183,6 +175,58 @@ function ResearchStage(Trigger, TechArray)
 	this.Trigger = Trigger;
 	this.TechArray = TechArray;
 	this.Appended = false;
+}
+
+function GetCurrentBorgATPercent()
+{
+	var Droids = enumDroid(me, DROID_ANY);
+	
+	var NumAT = 0;
+	var NumDroids = 0;
+	
+	for (D in Droids)
+	{
+		if (Droids[D].droidType != DROID_CYBORG) continue;
+		
+		if (IsAntiTank(Droids[D])) ++NumAT;
+		
+		++NumDroids;
+	}
+	
+	var Value = (NumAT / NumDroids) * 100;
+	
+	return Value >= 1 ? Value : 0;
+}
+
+function GetCurrentTankATPercent()
+{
+	var Droids = enumDroid(me, DROID_ANY);
+	
+	var NumAT = 0;
+	var NumDroids = 0;
+	
+	for (D in Droids)
+	{
+		if (Droids[D].droidType != DROID_WEAPON) continue;
+		
+		if (IsAntiTank(Droids[D])) ++NumAT;
+		
+		++NumDroids;
+	}
+	
+	var Value = (NumAT / NumDroids) * 100;
+	
+	return Value >= 1 ? Value : 0;
+}
+
+function ShouldBuildATTank()
+{
+	return CurrentRatio.TankATPercent > GetCurrentTankATPercent();
+}
+
+function ShouldBuildATBorg()
+{
+	return CurrentRatio.BorgATPercent > GetCurrentBorgATPercent();
 }
 
 function CheckTargetSeparation()
@@ -466,42 +510,29 @@ function MakeBorgs()
 	{
 		if (!structureIdle(BorgFacs[Fac]) || BorgFacs[Fac].status != BUILT) continue;
 		
-		if (CurrentRatio.BorgInc === CurrentRatio.BorgLimit) CurrentRatio.BorgInc = 0;
 		
-		for (E in CurrentRatio.BorgAT)
+		if (ShouldBuildATBorg())
 		{
-			if (CurrentRatio.BorgInc === CurrentRatio.BorgAT[E])
+			for (T in AT_BorgTemplates)
 			{
-				for (T in AT_BorgTemplates)
+				var TemplateName = AT_BorgTemplates[T][2] + " " + AT_BorgTemplates[T][0] + " " + AT_BorgTemplates[T][1];
+				if (buildDroid(BorgFacs[Fac], TemplateName, AT_BorgTemplates[T][0], AT_BorgTemplates[T][1], "", DROID_CYBORG, AT_BorgTemplates[T][2]))
 				{
-					var TemplateName = AT_BorgTemplates[T][2] + " " + AT_BorgTemplates[T][0] + " " + AT_BorgTemplates[T][1];
-					if (buildDroid(BorgFacs[Fac], TemplateName, AT_BorgTemplates[T][0], AT_BorgTemplates[T][1], "", DROID_CYBORG, AT_BorgTemplates[T][2]))
-					{
-						++CurrentRatio.BorgInc;
-						continue FactoryLoop;
-					}
+					continue FactoryLoop;
 				}
-				break;
 			}
 		}
 		
-		for (E in CurrentRatio.BorgAP)
+		for (T in AP_BorgTemplates)
 		{
-			if (CurrentRatio.BorgInc === CurrentRatio.BorgAP[E])
+			var TemplateName = AP_BorgTemplates[T][2] + " " + AP_BorgTemplates[T][0] + " " + AP_BorgTemplates[T][1];
+			
+			if (buildDroid(BorgFacs[Fac], TemplateName, AP_BorgTemplates[T][0], AP_BorgTemplates[T][1], "", DROID_CYBORG, AP_BorgTemplates[T][2]))
 			{
-				for (T in AP_BorgTemplates)
-				{
-					var TemplateName = AP_BorgTemplates[T][2] + " " + AP_BorgTemplates[T][0] + " " + AP_BorgTemplates[T][1];
-					if (buildDroid(BorgFacs[Fac], TemplateName, AP_BorgTemplates[T][0], AP_BorgTemplates[T][1], "", DROID_CYBORG, AP_BorgTemplates[T][2]))
-					{	
-						++CurrentRatio.BorgInc;
-						break;
-					}
-				}
-				
-				break;
+				continue FactoryLoop;
 			}
 		}
+		
 	}
 }
 
@@ -771,8 +802,6 @@ function MakeTrucks(IsBorgFac)
 	var Trucks = enumDroid(me, DROID_CONSTRUCT);
 	var TruckNum = CountTrucks() + TrucksBeingMade;
 	
-	if (TruckNum > 15 && !HadExtraTrucks) TrucksBeingMade = 0;
-	
 	if (TruckNum >= 15) return false;
 	
 	var Facs;
@@ -850,40 +879,26 @@ function MakeTanks()
 	{
 		if (!structureIdle(Facs[Fac]) || Facs[Fac].status != BUILT) continue;
 		
-		if (CurrentRatio.TankInc === CurrentRatio.TankLimit) CurrentRatio.TankInc = 0;
-		
-		for (E in CurrentRatio.TankAT)
+		//AT tanks
+		if (ShouldBuildATTank())
 		{
-			if (CurrentRatio.TankInc === CurrentRatio.TankAT[E])
+			for (T in AT_TankTemplates)
 			{
-				for (T in AT_TankTemplates)
+				var TemplateName = AT_TankTemplates[T][2] + " " + AT_TankTemplates[T][0] + " " + AT_TankTemplates[T][1];
+				if (buildDroid(Facs[Fac], TemplateName, AT_TankTemplates[T][0], AT_TankTemplates[T][1], "", DROID_WEAPON, AT_TankTemplates[T][2]))
 				{
-					var TemplateName = AT_TankTemplates[T][2] + " " + AT_TankTemplates[T][0] + " " + AT_TankTemplates[T][1];
-					if (buildDroid(Facs[Fac], TemplateName, AT_TankTemplates[T][0], AT_TankTemplates[T][1], "", DROID_WEAPON, AT_TankTemplates[T][2]))
-					{
-						++CurrentRatio.TankInc;
-						continue FactoryLoop;
-					}
+					continue FactoryLoop;
 				}
-				break;
 			}
 		}
 		
-		for (E in CurrentRatio.TankAP)
+		//AP tanks
+		for (T in AP_TankTemplates)
 		{
-			if (CurrentRatio.TankInc === CurrentRatio.TankAP[E])
-			{
-				for (T in AP_TankTemplates)
-				{
-					var TemplateName = AP_TankTemplates[T][2] + " " + AP_TankTemplates[T][0] + " " + AP_TankTemplates[T][1];
-					if (buildDroid(Facs[Fac], TemplateName, AP_TankTemplates[T][0], AP_TankTemplates[T][1], "", DROID_WEAPON, AP_TankTemplates[T][2]))
-					{	
-						++CurrentRatio.TankInc;
-						break;
-					}
-				}
-				
-				break;
+			var TemplateName = AP_TankTemplates[T][2] + " " + AP_TankTemplates[T][0] + " " + AP_TankTemplates[T][1];
+			if (buildDroid(Facs[Fac], TemplateName, AP_TankTemplates[T][0], AP_TankTemplates[T][1], "", DROID_WEAPON, AP_TankTemplates[T][2]))
+			{	
+				continue FactoryLoop;
 			}
 		}
 		
@@ -1072,21 +1087,11 @@ function UpdateRatios()
 	//Make ratios work properly in bases modes.
 	for (R in Ratios)
 	{
-		var Res = getResearch(Ratios[R].Trigger);
+		var Res = getResearch(Ratios[R].TriggerTech);
 		
 		if (Res.done)
 		{
-			var Backup = CurrentRatio;
-			CurrentRatio = Ratios[R];
-			if (CurrentRatio.TankLimit == Backup.TankLimit)
-			{
-				CurrentRatio.TankInc = Backup.TankInc;
-			}
-			if (CurrentRatio.BorgLimit == Backup.BorgLimit)
-			{
-				CurrentRatio.BorgInc = Backup.BorgInc;
-			}
-			
+			CurrentRatio = Ratios[R];	
 			break;
 		}
 	}
