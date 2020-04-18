@@ -781,7 +781,7 @@ function OrderBaseBuild(StructureType)
 	
 	if (!Truckles) return false;
 	
-	var Location = pickStructLocation(Truckles[0], StructureType, startPositions[me].x, startPositions[me].y, 0);
+	var Location = pickStructLocation(Truckles[0], StructureType, Truckles[0].x, Truckles[0].y, 0);
 	
 	if (!Location) return false;
 	
