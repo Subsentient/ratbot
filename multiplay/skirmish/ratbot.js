@@ -1212,7 +1212,6 @@ function GetUniversalRallyPoint()
 	if (!UniversalRallyPoint)
 	{
 		UpdateUniversalRallyPoint();
-		return GetUniversalRallyPoint();
 	}
 	
 	return UniversalRallyPoint;
