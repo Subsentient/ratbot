@@ -34,7 +34,7 @@ const baseStruct_Derrick = "A0ResourceExtractor";
 const baseStruct_Generator = "A0PowerGenerator";
 const baseStruct_BorgFac = "A0CyborgFactory";
 const baseStruct_VtolFac = "A0VTolFactory1";
-
+const baseStruct_Repair = "A0RepairCentre3";
 const Module_Factory = "A0FacMod1";
 const Module_Research = "A0ResearchModule1";
 const Module_Generator = "A0PowMod1";
@@ -72,11 +72,11 @@ var UniversalRallyPoint = null;
 
 
 ///Research path.
-var ResearchPath = ["R-Vehicle-Engine01", "R-Wpn-Cannon1Mk1", "R-Vehicle-Prop-Halftracks", "R-Struc-Research-Module",
-					"R-Struc-Research-Upgrade09", "R-Wpn-RailGun03", "R-Vehicle-Body05",
-					"R-Wpn-Cannon4AMk1", "R-Struc-Factory-Upgrade01", "R-Vehicle-Body11",
+var ResearchPath = ["R-Vehicle-Engine01", "R-Wpn-RailGun03", "R-Wpn-Cannon1Mk1", "R-Vehicle-Prop-Halftracks", "R-Struc-Research-Module",
+					"R-Struc-Research-Upgrade09", "R-Vehicle-Body05",
+					"R-Wpn-Cannon4AMk1", "R-Struc-Factory-Upgrade01", "R-Vehicle-Body11", "R-Struc-RepairFacility",
 					"R-Vehicle-Metals04", "R-Cyborg-Metals04",
-					"R-Struc-Factory-Upgrade09", "R-Cyborg-Hvywpn-Mcannon", "R-Wpn-MG2Mk1" ];
+					"R-Struc-Factory-Upgrade09", "R-Cyborg-Hvywpn-Mcannon", "R-Wpn-MG2Mk1"];
 
 ///Expanded research path triggered when a piece of tech becomes available.
 var ResearchStages = new Array(
@@ -108,7 +108,6 @@ var AT_TankTemplates = new Array(
 				[body_Mantis, prop_Tracks, "Cannon6TwinAslt"],
 				[body_Python, prop_Halftracks, "Cannon6TwinAslt"],
 				[body_Mantis, prop_Halftracks, "Cannon375mmMk1"],
-				[body_Tiger, prop_Halftracks, "Cannon4AUTOMk1"],
 				[body_Mantis, prop_Tracks, "Cannon4AUTOMk1"],
 				///Current gameplay balance makes Cobra superior for this due to production rates.
 				//[body_Python, prop_Halftracks, "Cannon4AUTOMk1"],
@@ -176,6 +175,21 @@ function ResearchStage(Trigger, TechArray)
 	this.Appended = false;
 }
 
+
+function AttackUnitBusy(Droid)
+{
+	switch (Droid.order)
+	{
+		case DORDER_ATTACK:
+		case DORDER_RECYCLE:
+		case DORDER_RTR:
+		case DORDER_RETREAT:
+			return true;
+		default:
+			return false;
+	}
+}
+			
 function GetCurrentBorgATPercent()
 {
 	var Droids = enumDroid(me, DROID_ANY);
@@ -316,7 +330,7 @@ function AttackTarget(TargetObject, UnitList, ForceAttack)
 		
 		if (!droidCanReach(UnitList[D2], TargetObject.x, TargetObject.y)) continue;
 		
-		if (UnitList[D2].order === DORDER_ATTACK) continue;
+		if (AttackUnitBusy(UnitList[D2])) continue;
 		//In range for an attack.
 
 		//Fire on the appropriate type of unit wherever possible.
@@ -447,7 +461,7 @@ function PerformAttack()
 	
 	if (Target == null)
 	{
-		OrderRetreat();
+		OrderRetreat(false);
 		return;
 	}
 	
@@ -470,7 +484,7 @@ function PerformAttack()
 	//Only attack when we got all possible units, or we have 3x as many units as them.
 	if (Droids.length != 150 && ((EnemyAttackDroids * 3 > OurAttackDroids) || OurAttackDroids < 20))
 	{
-		OrderRetreat();
+		OrderRetreat(false);
 		return;
 	}
 	
@@ -970,6 +984,13 @@ function FreeOilTrucks()
 	}
 }
 
+function NumRepairFacilities()
+{
+	var Repairs = enumStruct(me, REPAIR_FACILITY);
+	
+	return Repairs ? Repairs.length : 0;
+}
+	
 function WorkOnBase()
 {
 	var Researches = enumStruct(me, baseStruct_Research);
@@ -1076,6 +1097,21 @@ function WorkOnBase()
 			}
 		}
 	}
+	
+	if (isStructureAvailable(baseStruct_Repair, me) && NumRepairFacilities() < 5)
+	{
+		var RP = GetUniversalRallyPoint();
+		
+		var Truckles = FindTrucks(1, false);
+		
+		if (!Truckles) return;
+		
+		var Location = pickStructLocation(Truckles[0], baseStruct_Repair, RP.x, RP.y);
+	
+		if (!Location) return;
+	
+		orderDroidBuild(Truckles[0], DORDER_BUILD, baseStruct_Repair, Location.x, Location.y);
+	}
 }
 
 function CheckNeedRecycle()
@@ -1088,11 +1124,40 @@ function CheckNeedRecycle()
 	
 	for (var Dec = Droids.length - 1; Dec >= Droids.length - 11; --Dec)
 	{
-		if (Droids[Dec].droidType !== DROID_WEAPON && Droids[Dec].droidType !== DROID_CYBORG) continue;
+		if (!IsAttackUnit(Droids[Dec])) continue;
 		
 		orderDroid(Droids[Dec], DORDER_RECYCLE);
 	}
 }
+
+function IsTruck(Droid)
+{
+	return Droid.droidType === DROID_CONSTRUCT;
+}
+
+function IsAttackUnit(Droid)
+{
+	switch (Droid.droidType)
+	{
+		case DROID_WEAPON:
+		case DROID_CYBORG:
+			return true;
+		default:
+			return false;
+	}
+}
+
+function RetreatTrucks()
+{
+	var Droids = enumDroid(me, DROID_CONSTRUCT);
+	
+	for (D in Droids)
+	{
+		if (TruckBusy(Droids[D])) continue;
+		
+		orderDroidLoc(Droids[D], DORDER_MOVE, startPositions[me].x, startPositions[me].y);
+	}
+}	
 
 function eventStartLevel()
 {
@@ -1111,9 +1176,9 @@ function eventStartLevel()
 	setTimer("PerformAttack", 7000);
 	setTimer("UpdateRatios", 3000);
 	setTimer("CheckNeedRecycle", 20000);
+	setTimer("RetreatTrucks", 5000);
 	setTimer("FinishHalfBuilds", 5000);
 	setTimer("ManageResearchStages", 5000);
-	setTimer("CheckTargetSeparation", 5000);
 	setTimer("UpdateUniversalRallyPoint", 30000);
 }
 
@@ -1178,7 +1243,7 @@ function WeAreWeaker(OtherPlayer)
 	return (OurDroids.length / TheirDroids.length * 100) < 85; //85% size of enemy force
 }
 
-function OrderRetreat()
+function OrderRetreat(Force)
 {
 	var Droids = enumDroid(me, DROID_ANY);
 
@@ -1187,6 +1252,8 @@ function OrderRetreat()
 	for (D in Droids)
 	{
 		if (Droids[D].droidType == DROID_CONSTRUCT || Droids[D].droidType == DROID_CYBORG_CONSTRUCT) continue;
+
+		if (!Force && AttackUnitBusy(Droids[D])) continue;
 		
 		var Loc = GetUniversalRallyPoint();
 		
@@ -1199,9 +1266,14 @@ function eventAttacked(Target, Attacker)
 	//Account for splash damage
 	if (Attacker.player === me || EnemyNearBase) return;
 
+	if (Target.type == DROID && Target.health < 60 && NumRepairFacilities() > 0) //60% damage
+	{
+		orderDroid(Target, DORDER_RTR);
+	}
+	
 	if (WeAreWeaker(Attacker.player))
 	{
-		OrderRetreat();
+		OrderRetreat(true);
 		return;
 	}
 	
