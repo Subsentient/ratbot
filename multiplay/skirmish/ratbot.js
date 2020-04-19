@@ -67,6 +67,7 @@ var TrucksBeingMade = 0; //The number of trucks currently in production.
 var HadExtraTrucks = false; //If we started with more than 15 trucks, as some maps do.
 var EnemyNearBase = false; //Whether there's enemy units near our base.
 var EnableTargetSeparation = false;
+var UniversalRallyPoint = null;
 
 /**//*AFTER THIS IS STUFF THAT CAN CHANGE.*//**/
 
@@ -300,6 +301,38 @@ function ManageResearchStages()
 	}
 }
 
+function ChooseForwardLocation(Enemy, DistancePercent)
+{
+	var Us = startPositions[me];
+	var Them = startPositions[Enemy];
+	
+	var NewPos = { y: Us.x, y : Us.y }
+	
+	if (Us.x > Them.x)
+	{
+		NewPos.x = Us.x - ((Us.x - Them.x) * (DistancePercent / 100));
+	}
+	else
+	{
+		NewPos.x = Us.x + ((Them.x - Us.x) * (DistancePercent / 100));
+	}
+	
+	if (Us.y > Them.y)
+	{
+		NewPos.y = Us.y - ((Us.y - Them.y) * (DistancePercent / 100));
+	}
+	else
+	{
+		NewPos.y = Us.y + ((Them.y - Us.y) * (DistancePercent / 100));
+	}
+	
+	NewPos.x = Math.floor(NewPos.x);
+	NewPos.y = Math.floor(NewPos.y);
+	
+	return NewPos;
+}
+	
+
 function AttackTarget(TargetObject, UnitList, ForceAttack)
 {
 	for (D2 in UnitList)
@@ -362,9 +395,9 @@ function WatchForEnemies()
 	EnemyNearBase = FoundOne;
 }
 
-function ChooseEnemy()
+function ChooseEnemy(Force)
 {
-	if (EnemyNearBase) return null; //Don't go on a crusade when there's a bad guy nearby.
+	if (EnemyNearBase && !Force) return null; //Don't go on a crusade when there's a bad guy nearby.
 	
 	var Enemies = [];
 	
@@ -372,7 +405,7 @@ function ChooseEnemy()
 	for (var Inc = 0; Inc < maxPlayers; ++Inc)
 	{
 		//Never attack while someone is superior, sit and build up our forces instead.
-		if (WeAreWeaker(Inc)) return null;
+		if (!Force && WeAreWeaker(Inc)) return null;
 		
 		var EnemyStructs = enumCriticalStructs(Inc);
 		var EnemyDroids = enumDroid(Inc, DROID_ANY);
@@ -435,9 +468,13 @@ function PerformAttack()
 	var Droids = enumDroid(me, DROID_ANY);
 	
 	//Find an enemy to pwn
-	var Target = ChooseEnemy();
+	var Target = ChooseEnemy(false);
 	
-	if (Target == null) return;
+	if (Target == null)
+	{
+		OrderRetreat();
+		return;
+	}
 	
 	var EnemyDroids = enumDroid(Target, DROID_ANY);
 	var EnemyAttackDroids = 0;
@@ -456,7 +493,11 @@ function PerformAttack()
 	}
 	
 	//Only attack when we got all possible units, or we have 3x as many units as them.
-	if (Droids.length != 150 && ((EnemyAttackDroids * 3 > OurAttackDroids) || OurAttackDroids < 20)) return;
+	if (Droids.length != 150 && ((EnemyAttackDroids * 3 > OurAttackDroids) || OurAttackDroids < 20))
+	{
+		OrderRetreat();
+		return;
+	}
 	
 	var NonDefenseStructs = enumCriticalStructs(Target);
 
@@ -1078,7 +1119,6 @@ function CheckNeedRecycle()
 	}
 }
 
-
 function eventStartLevel()
 {
 	OilTrucks = newGroup();
@@ -1099,6 +1139,7 @@ function eventStartLevel()
 	setTimer("FinishHalfBuilds", 5000);
 	setTimer("ManageResearchStages", 5000);
 	setTimer("CheckTargetSeparation", 5000);
+	setTimer("UpdateUniversalRallyPoint", 30000);
 }
 
 function UpdateRatios()
@@ -1116,13 +1157,40 @@ function UpdateRatios()
 	}
 }
 
+function UpdateUniversalRallyPoint()
+{
+	var Enemy = ChooseEnemy(true);
+	
+	if (!Enemy) return null;
+	
+	//Move to a reasonable rally point. The actual API for this seems to be broken.
+	UniversalRallyPoint = ChooseForwardLocation(Enemy, 25);
+}
+
+function GetUniversalRallyPoint()
+{
+	if (!UniversalRallyPoint)
+	{
+		UpdateUniversalRallyPoint();
+		return GetUniversalRallyPoint();
+	}
+	
+	return UniversalRallyPoint;
+}
 
 function eventDroidBuilt(droid, fac1)
 {
 	if (droid.droidType === DROID_CONSTRUCT || droid.droidType === DROID_CYBORG_CONSTRUCT)
 	{
 		--TrucksBeingMade;
+		return;
 	}
+	
+	var Loc = GetUniversalRallyPoint();
+	
+	if (!Loc) return;
+	
+	orderDroidLoc(droid, DORDER_MOVE, Loc.x, Loc.y);
 }
 
 function WeAreWeaker(OtherPlayer)
@@ -1139,13 +1207,16 @@ function OrderRetreat()
 {
 	var Droids = enumDroid(me, DROID_ANY);
 
+	rbdebug("Retreating");
+	
 	for (D in Droids)
 	{
 		if (Droids[D].droidType == DROID_CONSTRUCT || Droids[D].droidType == DROID_CYBORG_CONSTRUCT) continue;
 		
-		orderDroidLoc(Droids[D], DORDER_MOVE, startPositions[me].x, startPositions[me].y);
-		rbdebug("Retreating");
-	}	
+		var Loc = GetUniversalRallyPoint();
+		
+		orderDroidLoc(Droids[D], DORDER_MOVE, Loc.x, Loc.y);
+	}
 }
 
 function eventAttacked(Target, Attacker)
