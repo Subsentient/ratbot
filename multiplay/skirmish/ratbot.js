@@ -52,7 +52,7 @@ const Limit_CC = 1;
 
 ///How many tiles away an oil has to be before we will NOT build it.
 const MaxOilDistance = 20;
-const MaxWatchingDistance = 35;
+const MaxWatchingDistance = 45;
 
 var OilTrucks; //The numeric group ID.
 var NonOilTrucks; //Hack because I can't find another way to un-group trucks.
@@ -66,22 +66,22 @@ const COMP_WEAPON = 8;
 var TrucksBeingMade = 0; //The number of trucks currently in production.
 var HadExtraTrucks = false; //If we started with more than 15 trucks, as some maps do.
 var EnemyNearBase = false; //Whether there's enemy units near our base.
-var EnableTargetSeparation = false;
 var UniversalRallyPoint = null;
 
 /**//*AFTER THIS IS STUFF THAT CAN CHANGE.*//**/
 
 
 ///Research path.
-var ResearchPath = ["R-Vehicle-Engine01", "R-Wpn-Cannon1Mk1", "R-Vehicle-Prop-Halftracks", "R-Struc-Research-Module", "R-Vehicle-Body05",
-					"R-Wpn-Cannon4AMk1", "R-Struc-Factory-Upgrade01", "R-Vehicle-Body11", "R-Struc-Research-Upgrade09",
-					"R-Wpn-RailGun03", "R-Vehicle-Metals04", "R-Cyborg-Metals04",
+var ResearchPath = ["R-Vehicle-Engine01", "R-Wpn-Cannon1Mk1", "R-Vehicle-Prop-Halftracks", "R-Struc-Research-Module",
+					"R-Struc-Research-Upgrade09", "R-Wpn-RailGun03", "R-Vehicle-Body05",
+					"R-Wpn-Cannon4AMk1", "R-Struc-Factory-Upgrade01", "R-Vehicle-Body11",
+					"R-Vehicle-Metals04", "R-Cyborg-Metals04",
 					"R-Struc-Factory-Upgrade09", "R-Cyborg-Hvywpn-Mcannon", "R-Wpn-MG2Mk1" ];
 
 ///Expanded research path triggered when a piece of tech becomes available.
 var ResearchStages = new Array(
-					new ResearchStage("R-Cyborg-Hvywpn-Mcannon", ["R-Vehicle-Body09", "R-Cyborg-Hvywpn-HPV",
-									"R-Wpn-Cannon-ROF03", "R-Struc-Power-Upgrade03a", "R-Struc-Factory-Upgrade09", "R-Wpn-RailGun03",
+					new ResearchStage("R-Cyborg-Hvywpn-Mcannon", ["R-Wpn-RailGun03", "R-Vehicle-Body09", "R-Cyborg-Hvywpn-HPV",
+									"R-Wpn-Cannon-ROF02", "R-Struc-Power-Upgrade03a", "R-Struc-Factory-Upgrade09", "R-Sys-Sensor-Upgrade02",
 									"R-Cyborg-Metals09","R-Vehicle-Metals09"]),
 					new ResearchStage("R-Wpn-Rail-Damage02", ["R-Cyborg-Hvywpn-RailGunner", "R-Vehicle-Prop-Tracks", "R-Vehicle-Body10",
 									"R-Sys-Autorepair-General", "R-Struc-Materials09", "R-Sys-Sensor-UpLink"])
@@ -228,32 +228,6 @@ function ShouldBuildATBorg()
 	return CurrentRatio.BorgATPercent >= GetCurrentBorgATPercent();
 }
 
-function CheckTargetSeparation()
-{
-	var Droids = enumDroid(me, DROID_ANY);
-	
-	var NumAT = 0;
-	var NumAP = 0;
-	var CutoffPercentage = 25.0;
-	
-	for (D in Droids)
-	{
-		if (Droids[D].droidType === DROID_CONSTRUCT | Droids[D].droidType === DROID_CYBORG_CONSTRUCT) continue;
-		
-		if (IsAntiTank(Droids[D])) ++NumAT;
-		else ++NumAP;
-	}
-	
-	var OldValue = EnableTargetSeparation;
-	
-	EnableTargetSeparation = NumAT > NumAP ? ((NumAP / NumAT) * 100 > CutoffPercentage) : ((NumAT / NumAP) * 100 > CutoffPercentage);
-	
-	if (EnableTargetSeparation != OldValue)
-	{
-		rbdebug((EnableTargetSeparation ? "Enabled" : "Disabled") + " target separation");
-	}
-}
-
 function PopulateWeaponTypes()
 {
 	for (Tmp in AT_TankTemplates)
@@ -342,17 +316,18 @@ function AttackTarget(TargetObject, UnitList, ForceAttack)
 		
 		if (!droidCanReach(UnitList[D2], TargetObject.x, TargetObject.y)) continue;
 		
+		if (UnitList[D2].order === DORDER_ATTACK) continue;
 		//In range for an attack.
 
 		//Fire on the appropriate type of unit wherever possible.
-		if (EnableTargetSeparation &&
-			!ForceAttack &&
+		if (!ForceAttack &&
 			TargetObject.type == DROID &&
 			(TargetObject.droidType != DROID_CYBORG &&
 			IsAntiBorg(UnitList[D2])) ||
 			(TargetObject.droidType == DROID_CYBORG &&
 			IsAntiTank(UnitList[D2])))
 		{
+			orderDroidLoc(UnitList[D2], DORDER_MOVE, TargetObject.x, TargetObject.y);
 			continue;
 		}
 		
