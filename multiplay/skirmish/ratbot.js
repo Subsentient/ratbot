@@ -396,13 +396,15 @@ function ChooseEnemy(Force)
 		//Never attack while someone is superior, sit and build up our forces instead.
 		if (!Force && WeAreWeaker(Inc)) return null;
 		
+		if (Inc === me || allianceExistsBetween(me, Inc)) continue;
+		
 		var EnemyStructs = enumCriticalStructs(Inc);
 		var EnemyDroids = enumDroid(Inc, DROID_ANY);
 		
 		var OurDroids = enumDroid(me, DROID_ANY);
 		
-		if ((EnemyDroids.length || EnemyStructs.length) && !allianceExistsBetween(me, Inc) &&
-			Inc !== me && droidCanReach(OurDroids[0], startPositions[Inc].x, startPositions[Inc].y))
+		if ((EnemyDroids.length || EnemyStructs.length) &&
+			droidCanReach(OurDroids[0], startPositions[Inc].x, startPositions[Inc].y))
 		{
 			Enemies.push(Inc);
 		}
@@ -1102,6 +1104,8 @@ function WorkOnBase()
 	{
 		var RP = GetUniversalRallyPoint();
 		
+		if (!RP) return;
+		
 		var Truckles = FindTrucks(1, false);
 		
 		if (!Truckles) return;
@@ -1255,6 +1259,8 @@ function OrderRetreat(Force)
 		if (!Force && AttackUnitBusy(Droids[D])) continue;
 		
 		var Loc = GetUniversalRallyPoint();
+		
+		if (!Loc) continue;
 		
 		orderDroidLoc(Droids[D], DORDER_MOVE, Loc.x, Loc.y);
 	}
