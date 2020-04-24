@@ -54,9 +54,6 @@ const Limit_CC = 1;
 const MaxOilDistance = 20;
 const MaxWatchingDistance = 45;
 
-var OilTrucks; //The numeric group ID.
-var NonOilTrucks; //Hack because I can't find another way to un-group trucks.
-
 ///Bug fixes. All of these came from nullbot.
 const DROID_CYBORG_CONSTRUCT = 10;
 const COMP_PROPULSION = 3;
@@ -157,9 +154,86 @@ var Ratios = new Array(
 
 var CurrentRatio = new UnitRatio(null, 0.0, 0.0); //Trigger weapon doesn't matter for the first ratio.
 
+var BuildJobs = [];
 
 var IsATWeapon = {};
+var RBGCounter = 0; //Group 1 is reserved for things that don't belong in a group.
+var RBGReg = {};
 
+function RBGroup()
+{
+	this.ID = ++RBGCounter;
+}
+
+RBGroup.prototype = 
+{
+	AddDroid : function(Droid)
+	{
+		RBGReg[Droid.id] = this.ID;
+	},
+	
+	DelDroid : function(Droid)
+	{
+		delete RBGReg[Droid.id];
+	},
+	
+	HasDroid : function(Droid)
+	{
+		return RBGReg[Droid.id] === this.ID;
+	},
+	
+	Wipe : function()
+	{
+		for (R in RBGReg)
+		{
+			if (RBGReg[R] === this.ID)
+			{
+				delete RBGReg[R];
+			}
+		}
+	},
+	
+	Assign : function(Truckles)
+	{
+		this.Wipe();
+		
+		for (T in Truckles)
+		{
+			this.AddDroid(Truckles[T]);
+		}
+	},
+	
+	GetDroids : function()
+	{ //Only returns living droids, obviously.
+		var Droids = enumDroid(me, DROID_ANY);
+		
+		var RetVal = [];
+		
+		for (D in Droids)
+		{
+			if (this.HasDroid(Droids[D]))
+			{
+				RetVal.push(Droids[D]);
+			}
+		}
+	
+		return RetVal;
+	},
+	
+	Size : function()
+	{ //Kinda expensive.
+		var Num = 0;
+
+		for (R in RBGReg)
+		{
+			if (RBGReg[R] === this.ID) ++Num;
+		}
+		
+		return Num;
+	},
+}
+
+var OilTrucks = new RBGroup();
 
 function UnitRatio(TriggerTech, TankATPercent, BorgATPercent)
 {
@@ -175,6 +249,61 @@ function ResearchStage(Trigger, TechArray)
 	this.Appended = false;
 }
 
+function BuildJob(Truckles, StructType, x, y, TrucksWeWant, ModNum)
+{
+	this.Group = new RBGroup();
+	this.StructType = StructType;
+	this.x = x;
+	this.y = y;
+	this.TrucksWeWant = TrucksWeWant;
+	this.Completed = false;
+	
+	this.StartingNumModules = ModNum; //How many modules we had when this job was created.
+	
+	for (T in Truckles)
+	{
+		if (!Truckles[T]) continue;
+		
+		this.Group.AddDroid(Truckles[T]);
+
+		orderDroidBuild(Truckles[T], DORDER_BUILD, this.StructType, this.x, this.y);
+	}
+	
+	rbdebug("Started build job for a " + this.StructType + " at " + this.x + "," + this.y + " using " + Truckles.length + " trucks");
+}
+
+function StructUsesModules(StructType)
+{
+	switch (StructType)
+	{
+		case baseStruct_Generator:
+		case baseStruct_Factory:
+		case baseStruct_Research:
+			return true;
+		default:
+			return false;
+	}
+}
+
+BuildJob.prototype =
+{
+	NumAssignedTrucks : function()
+	{ //Only returns living trucks.
+		return this.Group.Size();
+	},
+}
+
+function GetJobForStruct(x, y, StructType)
+{
+	var J = BuildJobs;
+	
+	for (B in J)
+	{
+		if (J[B].x == x && J[B].y == y && (!StructType || J[B].StructType === StructType) ) return J[B];
+	}
+	
+	return null;
+}
 
 function AttackUnitBusy(Droid)
 {
@@ -270,6 +399,14 @@ function IsAntiBorg(Droid)
 function IsAntiTank(Droid)
 {
 	return IsATWeapon[Droid.weapons[0].name];
+}
+
+function eventDestroyed(Obj)
+{
+	if (Obj.type === DROID)
+	{
+		delete RBGReg[Obj.id];
+	}
 }
 
 function ManageResearchStages()
@@ -588,9 +725,12 @@ function FinishHalfBuilds()
 	
 	for (S in Structs)
 	{
-		if (Structs[S].status != BUILT)
+		var Job = GetJobForStruct(Structs[S].x, Structs[S].y);
+		
+		if (Structs[S].status != BUILT && (!Job || Job.Completed || !Job.NumAssignedTrucks() || AllTrucksIdle(Job.Group)))
 		{
 			var Trucks = FindTrucks(2, false);
+			
 			for (T in Trucks)
 			{
 				orderDroidObj(Trucks[T], DORDER_HELPBUILD, Structs[S]);
@@ -611,7 +751,7 @@ function CountTrucks()
 	return Len;
 }
 
-function FindTrucks(Requested, StealOk)
+function FindTrucks(Requested, StealOk, AllowOilers)
 { //Find Requested number of idle trucks.
 	var TruckList = [];
 	
@@ -621,10 +761,15 @@ function FindTrucks(Requested, StealOk)
 	
 	for (var Inc = 0; Inc < Known.length; ++Inc)
 	{
-		//Don't take oiler trucks.
-		if (UnitInGroup(OilTrucks, Known[Inc])) continue;
+		if (!AllowOilers && IsOilTruck(Known[Inc]))
+		{
+			continue;
+		}
 		
-		if (TruckBusy(Known[Inc]) && !StealOk) continue;
+		if (TruckBusy(Known[Inc]))
+		{
+			if (!StealOk) continue;
+		}
 		
 		TruckList.push(Known[Inc]);
 		
@@ -656,117 +801,29 @@ function OrderModuleBuild(BaseStructure)
 			TrucksWeWant = 2;
 			break;
 		default:
-			return false;
+			return null;
 	}
+	
+	var Job = GetJobForStruct(BaseStructure.x, BaseStructure.y, Module);
+	
+	if (Job) return null;
 	
 	var Truckles = FindTrucks(TrucksWeWant, false);
 	
-	if (Truckles == null) return false;
+	if (Truckles == null || Truckles.length < 2) return null;
 	
-	for (var Inc = 0; Inc < Truckles.length; ++Inc)
-	{
-		orderDroidBuild(Truckles[Inc], DORDER_BUILD, Module, BaseStructure.x, BaseStructure.y);
-	}
-	
-	return true;
-	
-}
+	var Job = new BuildJob(Truckles, Module, BaseStructure.x, BaseStructure.y, TrucksWeWant, BaseStructure.modules);
 
-function SortByProximityToBase(Object1, Object2)
-{ //Ripped off from the semperfi JS
-	var One = distBetweenTwoPoints(startPositions[me].x, startPositions[me].y, Object1.x, Object1.y);
-	var Two = distBetweenTwoPoints(startPositions[me].x, startPositions[me].y, Object2.x, Object2.y);
-	return One - Two;
-}
-
-function FindClosestInGroup(GroupID, Target, StealOk)
-{
-	var Group = enumGroup(GroupID);
-	var Closest = Infinity;
-	var Distance;
+	BuildJobs.push(Job);
 	
-	var Unit;
-	if (!Group) return null;
+	return Job;
 	
-	for (G in Group)
-	{
-		if (TruckBusy(Group[G]) && !StealOk) continue;
-		
-		Distance = distBetweenTwoPoints(Target.x, Target.y, Group[G].x, Group[G].y);
-		
-		if (Distance < Closest)
-		{
-			Closest = Distance;
-			Unit = Group[G];
-		}
-	}
-	
-	if (!Unit) return null;
-	return Unit;
-}
-
-function FindClosestTruck(Target, StealOk)
-{
-	var Trucky;
-	var Closest = Infinity;
-	var Distance;
-	
-	var TruckList = enumDroid(me, DROID_CONSTRUCT);
-	var BorgTruckList = enumDroid(me, DROID_CYBORG_CONSTRUCT);
-	var List = TruckList.concat(BorgTruckList);
-	
-	
-	if (!List) return null;
-	
-	for (var Inc = 0; Inc < List.length; ++Inc)
-	{
-		if (UnitInGroup(OilTrucks, List[Inc])) continue;
-		
-		if (TruckBusy(List[Inc]) && !StealOk) continue;
-		 
-		Distance = distBetweenTwoPoints(Target.x, Target.y, List[Inc].x, List[Inc].y);
-		
-		if (Distance < Closest)
-		{
-			Closest = Distance;
-			Trucky = List[Inc];
-		}
-	}
-	
-	if (!Trucky) return null;
-	
-	return Trucky;
-}
-
-function CountGroupSize(GroupID)
-{
-	var Group = enumGroup(GroupID);
-	
-	return Group.length;
-}
-
-function GrabOilTrucks()
-{
-	var Droids = enumDroid(me, DROID_ANY);
-	var ExistingOilers = enumGroup(OilTrucks);
-	
-	var Needed = 4 - ExistingOilers;
-	
-	
-	for (D in Droids)
-	{
-		if (!Needed) return;
-		
-		if (Droids[D].droidType === DROID_CONSTRUCT || Droids[D].droidType === DROID_CYBORG_CONSTRUCT)
-		{
-			groupAddDroid(OilTrucks, Droids[D]);
-			--Needed;
-		}
-	}
 }
 
 function NeedToBuildOils()
 {
+	if (CountTrucks() < 5) return false;
+	
 	var Oils = enumFeature(-1, OilPool);
 	
 	for (O in Oils)
@@ -780,29 +837,85 @@ function NeedToBuildOils()
 	return false;
 }
 
+function IsOilTruck(Droid)
+{
+	return OilTrucks.HasDroid(Droid);
+}
+
+function FindNextIdleOilTruck()
+{
+	var Truckles = OilTrucks.GetDroids();
+	
+	for (T in Truckles)
+	{
+		if (TruckBusy(Truckles[T])) continue;
+		
+		return Truckles[T];
+	}
+	
+	return null;
+}
+
+function GrabNewOilTrucks(NumTrucks)
+{
+	var Truckles = FindTrucks(NumTrucks, false, true);
+	
+	if (!Truckles || !Truckles.length) return null;
+	
+	return Truckles;
+}
+
 function BuildOils()
 {
-	var Oils = enumFeature(-1, OilPool);
+	var NumTrucks = CountTrucks();
 	
-	if (Oils.length < 1)
+	var MinimumTotalTrucks = 6;
+	
+	if (NumTrucks < MinimumTotalTrucks) return false;
+	
+	var Truckles = OilTrucks.GetDroids();
+	var OSize = Truckles.length;
+
+	var OilTrucksWanted = 4;
+
+	//No pre-existing oiler trucks.
+	if (OSize < OilTrucksWanted)
 	{
-		return false;
+		var NewTruckles = GrabNewOilTrucks(OilTrucksWanted);
+		
+		if (NewTruckles && NewTruckles.length > OSize)
+		{
+			OilTrucks.Assign(NewTruckles);
+			Truckles = NewTruckles;
+			
+			rbdebug("Grabbed " + Truckles.length + " oiler trucks");
+		}
 	}
+	
+	if (!Truckles || !Truckles.length) return false;
+
+	var Oils = enumFeature(-1, OilPool);
 	
 	for (var Inc = 0; Inc < Oils.length; ++Inc)
 	{
-		if (MaxOilDistance >= distBetweenTwoPoints(startPositions[me].x, startPositions[me].y, Oils[Inc].x, Oils[Inc].y))
-		{	
-			
-			var Trucky = FindClosestInGroup(OilTrucks, Oils[Inc], false);
-			
-			if (Trucky == null) return false;
-			
-			
-			orderDroidBuild(Trucky, DORDER_BUILD, baseStruct_Derrick, Oils[Inc].x, Oils[Inc].y);
-			return true;
-		
+		if (MaxOilDistance < distBetweenTwoPoints(startPositions[me].x, startPositions[me].y, Oils[Inc].x, Oils[Inc].y))
+		{ //Too far away
+			continue;
 		}
+		
+		if (GetJobForStruct(Oils[Inc].x, Oils[Inc].y, baseStruct_Derrick)) continue;
+		
+		var Trucky = FindNextIdleOilTruck();
+		
+		if (!Trucky) return false;
+		
+		var Job = new BuildJob([Trucky], baseStruct_Derrick, Oils[Inc].x, Oils[Inc].y, 1, 0);
+		
+		rbdebug("Ordering oil derrick at " + Oils[Inc].x + "," + Oils[Inc].y + ", with truck id " + Trucky.id);
+		
+		BuildJobs.push(Job);
+		
+		return true;
 	}
 	
 	return false;
@@ -810,24 +923,38 @@ function BuildOils()
 
 function OrderBaseBuild(StructureType)
 {
-	var Truckles = FindTrucks(3, false);
+	var TrucksWeWant = 4;
+	var Truckles = FindTrucks(TrucksWeWant, false, false);
 	
-	if (!Truckles) return false;
+	if (!Truckles || Truckles.length < 2) return null;
 	
 	var Location = pickStructLocation(Truckles[0], StructureType, Truckles[0].x, Truckles[0].y, 0);
 	
-	if (!Location) return false;
+	if (!Location) return null;
 	
-	for (var Inc = 0; Inc < Truckles.length; ++Inc)
-	{
-		orderDroidBuild(Truckles[Inc], DORDER_BUILD, StructureType, Location.x, Location.y);
-	}
+	if (GetJobForStruct(Location.x, Location.y)) return null;
+		
+	var Job = new BuildJob(Truckles, StructureType, Location.x, Location.y, TrucksWeWant, 0);
 	
-	return true;
+	BuildJobs.push(Job);
+	
+	return Job;
 }
 
 function eventStructureBuilt(Struct, Droid)
 {
+	rbdebug("Entered eventStructureBuilt for structure at " + Struct.x + "," + Struct.y);
+
+	for (var Inc = 0; Inc < BuildJobs.length; ++Inc)
+	{
+		if (BuildJobs[Inc].x == Struct.x && BuildJobs[Inc].y == Struct.y)
+		{
+			rbdebug("Structure " + BuildJobs[Inc].StructType + " completed at " + Struct.x + "," + Struct.y);
+			//We just delete these ones.
+			BuildJobs.splice(Inc);
+			break;
+		}
+	}
 }
 
 function MakeTrucks(IsBorgFac)
@@ -973,19 +1100,6 @@ function DoAllResearch()
 	}
 }
 
-function FreeOilTrucks()
-{
-	var Droids = enumDroid(me, DROID_ANY);
-	
-	for (G in Droids)
-	{
-		if (Droids[G].droidType === DROID_CONSTRUCT || Droids[G].droidType === DROID_CYBORG_CONSTRUCT)
-		{
-			groupAddDroid(NonOilTrucks, Droids[G]);
-		}
-	}
-}
-
 function NumRepairFacilities()
 {
 	var Repairs = enumStruct(me, REPAIR_FACILITY);
@@ -1002,23 +1116,25 @@ function WorkOnBase()
 	var CC = enumStruct(me, baseStruct_CC);	
 	
 	
+	var NumTrucks = CountTrucks();
 	
 	//Grab oiler trucks.
 	if (NeedToBuildOils())
 	{
-		if (CountTrucks() >= 6 && CountGroupSize(OilTrucks) < 4)
-		{
-			GrabOilTrucks();
-		}
 		BuildOils();
 	}
 	else
 	{
-		FreeOilTrucks();
+		OilTrucks.Wipe();
 	}
 	
-	
 	//Basic stuff just to get us going
+	if (NumTrucks <= 4 && Factories.length < 2)
+	{
+		OrderBaseBuild(baseStruct_Factory);
+		return; //Don't try and build anything else but oils until we have these.
+	}
+	
 	if (Researches.length < 3)
 	{
 		OrderBaseBuild(baseStruct_Research);
@@ -1066,14 +1182,16 @@ function WorkOnBase()
 		//Researches
 		for (var Inc = 0; Inc < Researches.length; ++Inc)
 		{
-			if (!Researches[Inc].modules || Researches[Inc].status == BEING_BUILT)
+			if (!Researches[Inc].modules)
 			{
-				FoundOne = true;
-				OrderModuleBuild(Researches[Inc]);
+				if (OrderModuleBuild(Researches[Inc]))
+				{
+					FoundOne = true;
+				}
 			}
 		}
 		
-		if (FoundOne) return;
+		if (FoundOne) return; //Research modules first.
 	}
 	
 	if (isStructureAvailable(Module_Factory, me))
@@ -1106,7 +1224,9 @@ function WorkOnBase()
 		
 		if (!RP) return;
 		
-		var Truckles = FindTrucks(1, false);
+		var TrucksWeWant = 1;
+		
+		var Truckles = FindTrucks(TrucksWeWant, false);
 		
 		if (!Truckles) return;
 		
@@ -1114,7 +1234,11 @@ function WorkOnBase()
 	
 		if (!Location) return;
 	
-		orderDroidBuild(Truckles[0], DORDER_BUILD, baseStruct_Repair, Location.x, Location.y);
+		if (GetJobForStruct(Location.x, Location.y, baseStruct_Repair)) return;
+		
+		var Job = new BuildJob(Truckles, baseStruct_Repair, Location.x, Location.y, TrucksWeWant, 0);
+		
+		BuildJobs.push(Job);
 	}
 }
 
@@ -1136,7 +1260,14 @@ function CheckNeedRecycle()
 
 function IsTruck(Droid)
 {
-	return Droid.droidType === DROID_CONSTRUCT;
+	switch (Droid.droidType)
+	{
+		case DROID_CYBORG_CONSTRUCT:
+		case DROID_CONSTRUCT:
+			return true;
+		default:
+			return false;
+	}
 }
 
 function IsAttackUnit(Droid)
@@ -1157,22 +1288,46 @@ function RetreatTrucks()
 	
 	for (D in Droids)
 	{
-		if (TruckBusy(Droids[D])) continue;
+		if (TruckBusy(Droids[D]) || IsOilTruck(Droids[D])) continue;
 		
 		orderDroidLoc(Droids[D], DORDER_MOVE, startPositions[me].x, startPositions[me].y);
 	}
-}	
+}
+
+function AllTrucksIdle(Group)
+{
+	var Truckles = Group.GetDroids();
+	
+	for (T in Truckles)
+	{
+		if (TruckBusy(Truckles[T])) return false;
+	}
+	
+	return true;
+}
+
+function CheckForDeadBuildJobs()
+{
+	Reset:
+	for (var Inc = 0; Inc < BuildJobs.length; ++Inc)
+	{
+		if (BuildJobs[Inc].Completed || !BuildJobs[Inc].NumAssignedTrucks() || AllTrucksIdle(BuildJobs[Inc].Group))
+		{
+			BuildJobs[Inc].Group.Wipe();
+			BuildJobs.splice(Inc);
+			continue Reset;
+		}
+	}
+}
 
 function eventStartLevel()
 {
-	OilTrucks = newGroup();
-	NonOilTrucks = newGroup();
-	
 	if (CountTrucks() > 15) HadExtraTrucks = true;
 	
 	UpdateRatios();
 	
 	setTimer("DoAllResearch", 500);
+	setTimer("CheckForDeadBuildJobs", 300);
 	setTimer("MakeTanks", 300);
 	setTimer("MakeBorgs", 300);
 	setTimer("WorkOnBase", 300);
