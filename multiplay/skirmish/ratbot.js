@@ -71,9 +71,9 @@ var UniversalRallyPoint = null;
 ///Research path.
 var ResearchPath = ["R-Vehicle-Engine01", "R-Wpn-RailGun03", "R-Wpn-Cannon1Mk1", "R-Vehicle-Prop-Halftracks", "R-Struc-Research-Module",
 					"R-Struc-Research-Upgrade09", "R-Vehicle-Body05",
-					"R-Wpn-Cannon4AMk1", "R-Struc-Factory-Upgrade01", "R-Vehicle-Body11", "R-Struc-RepairFacility",
+					"R-Wpn-Cannon4AMk1", "R-Wpn-Cannon3Mk1", "R-Struc-Factory-Upgrade01", "R-Vehicle-Body11", "R-Struc-RepairFacility",
 					"R-Vehicle-Metals04", "R-Cyborg-Metals04",
-					"R-Struc-Factory-Upgrade09", "R-Cyborg-Hvywpn-Mcannon", "R-Wpn-MG2Mk1"];
+					"R-Struc-Factory-Upgrade09", "R-Cyborg-Hvywpn-Mcannon", "R-Wpn-MG3Mk1"];
 
 ///Expanded research path triggered when a piece of tech becomes available.
 var ResearchStages = new Array(
@@ -104,6 +104,7 @@ var AT_TankTemplates = new Array(
 				[body_Tiger, prop_Halftracks, "Cannon6TwinAslt"],
 				[body_Mantis, prop_Tracks, "Cannon6TwinAslt"],
 				[body_Python, prop_Halftracks, "Cannon6TwinAslt"],
+				[body_Python, prop_Wheels, "Cannon375mmMk1"],
 				[body_Mantis, prop_Halftracks, "Cannon375mmMk1"],
 				[body_Mantis, prop_Tracks, "Cannon4AUTOMk1"],
 				///Current gameplay balance makes Cobra superior for this due to production rates.
@@ -149,6 +150,7 @@ var Ratios = new Array(
 					new UnitRatio("R-Cyborg-Hvywpn-Mcannon", 100.0, 100.0), //Superborg and up, pure AT
 					new UnitRatio("R-Wpn-Cannon4AMk1", 100.0, 0.0), //In case med cannon comes before hpv etc
 					new UnitRatio("R-Wpn-Cannon2Mk1", 100.0, 0.0), //Medium cannon and up, pure cannon tanks, pure mg borgs
+					new UnitRatio("R-Wpn-Cannon3Mk1", 100.0, 0.0), //Medium cannon and up, pure cannon tanks, pure mg borgs
 					new UnitRatio("R-Wpn-Cannon1Mk1", 50.0, 50.0) //With light cannon, 50/50 tanks and 50/50 borgs
 					);
 
