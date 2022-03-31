@@ -68,6 +68,7 @@ var FactoryMode = null;
 var LastBeaconX = null;
 var LastBeaconY = null;
 var LastBeaconOrigin = null;
+var FastControlPlayer = null;
 
 /**//*AFTER THIS IS STUFF THAT CAN CHANGE.*//**/
 
@@ -1440,8 +1441,22 @@ function eventChat(Origin, Target, Msg)
 	
 	switch (Msg)
 	{
+		case "fastcontrol":
+			FastControlPlayer = FastControlPlayer !== null ? null : Origin;
+			
+			chat(Origin, FastControlPlayer !== null ?
+						"I will move my attack units to wherever you drop beacons in the future." :
+						"I will stop following your beacons.");
+			
+			break;
 		case "factorymode":
 			FactoryMode = FactoryMode !== null ? null : Origin;
+
+			
+			chat(Origin, FactoryMode !== null ?
+						"I will gift future units to you as they produce." :
+						"I will stop automatically gifting you units.");
+
 			//Fall through
 		case "givetanks":
 		{
@@ -1461,7 +1476,6 @@ function eventChat(Origin, Target, Msg)
 				
 				donateObject(Droids[Droid], Origin);
 			}
-			
 			break;
 		}
 		case "truck":
@@ -1542,6 +1556,28 @@ function eventBeacon(X, Y, Origin, Target, Msg)
 	if (Target !== me || !allianceExistsBetween(Origin, me))
 	{
 		return;
+	}
+	
+	if (Origin == FastControlPlayer)
+	{ //Perform fast movement control
+		
+		var Droids = enumDroid(me, DROID_ANY);
+		
+		for (D in Droids)
+		{
+			if (IsTruck(Droids[D])) continue;
+			
+			var Obj = getObject(X, Y);
+			
+			if (Obj)
+			{
+				orderDroidObj(Droids[D], DORDER_ATTACK, Obj);
+			}
+			else
+			{
+				orderDroidLoc(Droids[D], DORDER_MOVE, X, Y);
+			}
+		}
 	}
 	
 	LastBeaconX = X;
