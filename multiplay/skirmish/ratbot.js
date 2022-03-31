@@ -64,6 +64,10 @@ var TrucksBeingMade = 0; //The number of trucks currently in production.
 var HadExtraTrucks = false; //If we started with more than 15 trucks, as some maps do.
 var EnemyNearBase = false; //Whether there's enemy units near our base.
 var UniversalRallyPoint = null;
+var FactoryMode = null;
+var LastBeaconX = null;
+var LastBeaconY = null;
+var LastBeaconOrigin = null;
 
 /**//*AFTER THIS IS STUFF THAT CAN CHANGE.*//**/
 
@@ -72,8 +76,8 @@ var UniversalRallyPoint = null;
 var ResearchPath = ["R-Vehicle-Engine01", "R-Wpn-RailGun03", "R-Wpn-Cannon1Mk1", "R-Vehicle-Prop-Halftracks", "R-Struc-Research-Module",
 					"R-Struc-Research-Upgrade09", "R-Vehicle-Body05",
 					"R-Wpn-Cannon4AMk1", "R-Wpn-Cannon3Mk1", "R-Struc-Factory-Upgrade01", "R-Vehicle-Body11", "R-Struc-RepairFacility",
-					"R-Vehicle-Metals04", "R-Cyborg-Metals04",
-					"R-Struc-Factory-Upgrade09", "R-Cyborg-Hvywpn-Mcannon", "R-Wpn-MG3Mk1"];
+					"R-Vehicle-Metals04", "R-Cyborg-Hvywpn-Mcannon", "R-Cyborg-Metals04",
+					"R-Struc-Factory-Upgrade09", "R-Wpn-MG3Mk1"];
 
 ///Expanded research path triggered when a piece of tech becomes available.
 var ResearchStages = new Array(
@@ -107,8 +111,7 @@ var AT_TankTemplates = new Array(
 				[body_Python, prop_Wheels, "Cannon375mmMk1"],
 				[body_Mantis, prop_Halftracks, "Cannon375mmMk1"],
 				[body_Mantis, prop_Tracks, "Cannon4AUTOMk1"],
-				///Current gameplay balance makes Cobra superior for this due to production rates.
-				//[body_Python, prop_Halftracks, "Cannon4AUTOMk1"],
+				[body_Python, prop_Halftracks, "Cannon2A-TMk1"],
 				[body_Cobra, prop_Halftracks, "Cannon4AUTOMk1"],
 				[body_Cobra, prop_Halftracks, "Cannon2A-TMk1"],
 				[body_Cobra, prop_Halftracks, "Cannon1Mk1"],
@@ -1386,6 +1389,12 @@ function eventDroidBuilt(droid, fac1)
 		return;
 	}
 	
+	if (FactoryMode !== null)
+	{
+		donateObject(droid, FactoryMode);
+		return;
+	}
+	
 	var Loc = GetUniversalRallyPoint();
 	
 	if (!Loc) return;
@@ -1422,6 +1431,82 @@ function OrderRetreat(Force)
 		orderDroidLoc(Droids[D], DORDER_MOVE, Loc.x, Loc.y);
 	}
 }
+function eventChat(Origin, Target, Msg)
+{
+	if (Target !== me || !allianceExistsBetween(Origin, me))
+	{
+		return;
+	}
+	
+	switch (Msg)
+	{
+		case "factorymode":
+			FactoryMode = FactoryMode !== null ? null : Origin;
+			//Fall through
+		case "givetanks":
+		{
+			var Droids = enumDroid(me, DROID_ANY);
+			
+			if (!Droids)
+			{
+				break;
+			}
+			
+			for (Droid in Droids)
+			{
+				if (Droids[Droid].droidType === DROID_CONSTRUCT || Droids[Droid].droidType === DROID_CYBORG_CONSTRUCT)
+				{
+					continue;
+				}
+				
+				donateObject(Droids[Droid], Origin);
+			}
+			
+			break;
+		}
+		case "truck":
+		{
+			var Trucks = enumDroid(me, DROID_CONSTRUCT);
+			
+			if (Trucks)
+			{
+				Trucks.concat(enumDroid(me, DROID_CYBORG_CONSTRUCT));
+			}
+			
+			if (!Trucks || !Trucks.length)
+			{
+				break;
+			}
+			
+			donateObject(Trucks[0], Origin);
+			break;
+		}
+		case "power":
+			donatePower(playerPower(me) / 2, Origin);
+			break;
+		case "go here":
+		{
+			if (LastBeaconOrigin !== Origin || LastBeaconX === null || LastBeaconY === null)
+			{
+				break;
+			}
+			
+			var Droids = enumDroid(me, DROID_ANY);
+			
+			for (Droid in Droids)
+			{
+				if (Droids[Droid].droidType === DROID_CONSTRUCT || Droids[Droid].droidType === DROID_CYBORG_CONSTRUCT)
+				{
+					continue;
+				}
+				
+				orderDroidLoc(Droids[Droid], DORDER_MOVE, LastBeaconX, LastBeaconY);
+			}
+			
+			break;
+		}
+	}
+}
 
 function eventAttacked(Target, Attacker)
 {
@@ -1449,6 +1534,19 @@ function eventAttacked(Target, Attacker)
 function rbdebug(Msg)
 {
 	debug("RatBot " + me + ":: " + Msg);
+}
+
+
+function eventBeacon(X, Y, Origin, Target, Msg)
+{
+	if (Target !== me || !allianceExistsBetween(Origin, me))
+	{
+		return;
+	}
+	
+	LastBeaconX = X;
+	LastBeaconY = Y;
+	LastBeaconOrigin = Origin;
 }
 
 function eventResearched(Research, Herp)
