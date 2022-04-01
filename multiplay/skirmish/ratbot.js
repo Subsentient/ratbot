@@ -1442,6 +1442,7 @@ function eventChat(Origin, Target, Msg)
 	switch (Msg)
 	{
 		case "fastcontrol":
+		case "fc":
 			FastControlPlayer = FastControlPlayer !== null ? null : Origin;
 			
 			chat(Origin, FastControlPlayer !== null ?
@@ -1450,6 +1451,7 @@ function eventChat(Origin, Target, Msg)
 			
 			break;
 		case "factorymode":
+		case "fm":
 			FactoryMode = FactoryMode !== null ? null : Origin;
 
 			
