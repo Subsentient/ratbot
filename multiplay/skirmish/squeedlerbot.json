@@ -1,0 +1,8 @@
+{
+    "AI": {
+        "js": "ratbot/personality_squeedlers.js",
+        "name": "Squeedlerbot",
+        "tip": "Based on RatBot - Makes squeedlers -- tiny assaultgun tanks."
+    }
+}
+

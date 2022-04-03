@@ -2,63 +2,10 @@
  * Public domain.
  */
 
-///Propulsions
-const prop_Wheels = "wheeled01";
-const prop_Halftracks = "HalfTrack";
-const prop_Tracks = "tracked01";
-const prop_Hover = "hover01";
-const prop_Vtol = "V-Tol";
-
-///Bodies.
-const body_Dragon = "Body14SUP";
-const body_Wyvern = "Body13SUP";
-const body_Vengeance = "Body10MBT";
-const body_Tiger = "Body9REC";
-const body_Retribution = "Body7ABT";
-const body_Panther = "Body6SUPP";
-const body_Mantis = "Body12SUP";
-const body_Python = "Body11ABT";
-const body_Scorpion = "Body8MBT";
-const body_Retaliation = "Body3MBT";
-const body_Cobra = "Body5REC";
-const body_Leopard = "Body2SUP";
-const body_Bug = "Body4ABT";
-const body_Viper = "Body1REC";
-
-
-///Base structures.
-const baseStruct_CC = "A0CommandCentre";
-const baseStruct_Factory = "A0LightFactory";
-const baseStruct_Research =  "A0ResearchFacility";
-const baseStruct_Derrick = "A0ResourceExtractor";
-const baseStruct_Generator = "A0PowerGenerator";
-const baseStruct_BorgFac = "A0CyborgFactory";
-const baseStruct_VtolFac = "A0VTolFactory1";
-const baseStruct_Repair = "A0RepairCentre3";
-const Module_Factory = "A0FacMod1";
-const Module_Research = "A0ResearchModule1";
-const Module_Generator = "A0PowMod1";
-
-const OilPool = "OilResource";
-
-///Limits.
-const Limit_PGen = 10;
-const Limit_Res = 5;
-const Limit_Fac = 5;
-const Limit_BFac = 5;
-const Limit_VFac = 5;
-const Limit_CC = 1;
-
 
 ///How many tiles away an oil has to be before we will NOT build it.
 const MaxOilDistance = 20;
 const MaxWatchingDistance = 45;
-
-///Bug fixes. All of these came from nullbot.
-const DROID_CYBORG_CONSTRUCT = 10;
-const COMP_PROPULSION = 3;
-const COMP_BODY = 1;
-const COMP_WEAPON = 8;
 
 var TrucksBeingMade = 0; //The number of trucks currently in production.
 var HadExtraTrucks = false; //If we started with more than 15 trucks, as some maps do.
@@ -71,92 +18,6 @@ var LastBeaconOrigin = null;
 var FastControlPlayer = null;
 
 /**//*AFTER THIS IS STUFF THAT CAN CHANGE.*//**/
-
-
-///Research path.
-var ResearchPath = ["R-Vehicle-Engine01", "R-Wpn-RailGun03", "R-Wpn-Cannon1Mk1", "R-Vehicle-Prop-Halftracks", "R-Struc-Research-Module",
-					"R-Struc-Research-Upgrade09", "R-Vehicle-Body05",
-					"R-Wpn-Cannon4AMk1", "R-Wpn-Cannon3Mk1", "R-Struc-Factory-Upgrade01", "R-Vehicle-Body11", "R-Struc-RepairFacility",
-					"R-Vehicle-Metals04", "R-Cyborg-Hvywpn-Mcannon", "R-Cyborg-Metals04",
-					"R-Struc-Factory-Upgrade09", "R-Wpn-MG3Mk1"];
-
-///Expanded research path triggered when a piece of tech becomes available.
-var ResearchStages = new Array(
-					new ResearchStage("R-Cyborg-Hvywpn-Mcannon", ["R-Wpn-RailGun03", "R-Vehicle-Body09", "R-Cyborg-Hvywpn-HPV",
-									"R-Wpn-Cannon-ROF02", "R-Struc-Power-Upgrade03a", "R-Struc-Factory-Upgrade09", "R-Sys-Sensor-Upgrade02",
-									"R-Cyborg-Metals09","R-Vehicle-Metals09"]),
-					new ResearchStage("R-Wpn-Rail-Damage02", ["R-Cyborg-Hvywpn-RailGunner", "R-Vehicle-Prop-Tracks", "R-Vehicle-Body10",
-									"R-Sys-Autorepair-General", "R-Struc-Materials09", "R-Sys-Sensor-UpLink"])
-					);
-
-
-///Truck templates. We just iterate through these.
-var TruckTemplates = new Array(
-				[body_Retaliation, prop_Tracks, "Spade1Mk1"],
-				[body_Bug, prop_Tracks, "Spade1Mk1"],
-				[body_Viper, prop_Halftracks, "Spade1Mk1"],
-				[body_Viper, prop_Wheels, "Spade1Mk1"]);
-
-///Tank pre-templates.
-var AT_TankTemplates = new Array(
-				[body_Vengeance, prop_Tracks, "RailGun3Mk1"],
-				[body_Tiger, prop_Halftracks, "RailGun3Mk1"],
-				[body_Tiger, prop_Halftracks, "RailGun2Mk1"],
-				[body_Mantis, prop_Tracks, "RailGun2Mk1"],
-				[body_Tiger, prop_Halftracks, "RailGun1Mk1"],
-				[body_Mantis, prop_Tracks, "RailGun1Mk1"],
-				[body_Python, prop_Halftracks, "RailGun1Mk1"],
-				[body_Tiger, prop_Halftracks, "Cannon6TwinAslt"],
-				[body_Mantis, prop_Tracks, "Cannon6TwinAslt"],
-				[body_Python, prop_Halftracks, "Cannon6TwinAslt"],
-				[body_Python, prop_Wheels, "Cannon375mmMk1"],
-				[body_Mantis, prop_Halftracks, "Cannon375mmMk1"],
-				[body_Mantis, prop_Tracks, "Cannon4AUTOMk1"],
-				[body_Python, prop_Halftracks, "Cannon2A-TMk1"],
-				[body_Cobra, prop_Halftracks, "Cannon4AUTOMk1"],
-				[body_Cobra, prop_Halftracks, "Cannon2A-TMk1"],
-				[body_Cobra, prop_Halftracks, "Cannon1Mk1"],
-				[body_Viper, prop_Halftracks, "Cannon1Mk1"],
-				[body_Viper, prop_Wheels, "Cannon1Mk1"]);
-				
-var AP_TankTemplates = new Array(
-				[body_Vengeance, prop_Tracks, "Laser2PULSEMk1"],
-				[body_Vengeance, prop_Tracks, "MG5TWINROTARY"],
-				[body_Tiger, prop_Halftracks, "MG5TWINROTARY"],
-				[body_Mantis, prop_Tracks, "MG5TWINROTARY"],
-				[body_Python, prop_Halftracks, "MG5TWINROTARY"],
-				[body_Tiger, prop_Halftracks, "MG4ROTARYMk1"],
-				[body_Mantis, prop_Tracks, "MG4ROTARYMk1"],
-				[body_Python, prop_Halftracks, "MG4ROTARYMk1"],
-				[body_Python, prop_Halftracks, "MG3Mk1"],
-				[body_Cobra, prop_Halftracks, "MG3Mk1"],
-				[body_Viper, prop_Halftracks, "MG3Mk1"],
-				[body_Cobra, prop_Halftracks, "MG2Mk1"],
-				[body_Viper, prop_Halftracks, "MG2Mk1"],
-				[body_Viper, prop_Wheels, "MG2Mk1"],
-				[body_Viper, prop_Halftracks, "MG1Mk1"],
-				[body_Viper, prop_Wheels, "MG1Mk1"]);
-
-var AT_BorgTemplates = new Array(
-	["CyborgLightBody", "CyborgLegs", "Cyb-Hvywpn-RailGunner"], 
-	["CyborgLightBody", "CyborgLegs", "Cyb-Wpn-Rail1"],
-	["CyborgLightBody", "CyborgLegs", "Cyb-Hvywpn-HPV"],
-	["CyborgLightBody", "CyborgLegs", "Cyb-Hvywpn-Mcannon"],
-	["CyborgLightBody", "CyborgLegs", "CyborgCannon"]);
-
-var AP_BorgTemplates = new Array(
-	["CyborgLightBody", "CyborgLegs", "Cyb-Hvywpn-PulseLsr"],
-	["CyborgLightBody", "CyborgLegs", "Cyb-Wpn-Laser"],
-	["CyborgLightBody", "CyborgLegs", "CyborgRotMG"],
-	["CyborgLightBody", "CyborgLegs", "CyborgChaingun"]);
-		
-var Ratios = new Array(
-					new UnitRatio("R-Cyborg-Hvywpn-Mcannon", 100.0, 100.0), //Superborg and up, pure AT
-					new UnitRatio("R-Wpn-Cannon4AMk1", 100.0, 0.0), //In case med cannon comes before hpv etc
-					new UnitRatio("R-Wpn-Cannon2Mk1", 100.0, 0.0), //Medium cannon and up, pure cannon tanks, pure mg borgs
-					new UnitRatio("R-Wpn-Cannon3Mk1", 100.0, 0.0), //Medium cannon and up, pure cannon tanks, pure mg borgs
-					new UnitRatio("R-Wpn-Cannon1Mk1", 50.0, 50.0) //With light cannon, 50/50 tanks and 50/50 borgs
-					);
 
 var CurrentRatio = new UnitRatio(null, 0.0, 0.0); //Trigger weapon doesn't matter for the first ratio.
 
@@ -241,20 +102,6 @@ RBGroup.prototype =
 
 var OilTrucks = new RBGroup();
 
-function UnitRatio(TriggerTech, TankATPercent, BorgATPercent)
-{
-	this.TriggerTech = TriggerTech;
-	this.TankATPercent = TankATPercent;
-	this.BorgATPercent = BorgATPercent;
-}
-
-function ResearchStage(Trigger, TechArray)
-{
-	this.Trigger = Trigger;
-	this.TechArray = TechArray;
-	this.Appended = false;
-}
-
 function BuildJob(Truckles, StructType, x, y, TrucksWeWant, ModNum)
 {
 	this.Group = new RBGroup();
@@ -318,7 +165,6 @@ function AttackUnitBusy(Droid)
 		case DORDER_ATTACK:
 		case DORDER_RECYCLE:
 		case DORDER_RTR:
-		case DORDER_RETREAT:
 			return true;
 		default:
 			return false;
@@ -466,65 +312,52 @@ function ChooseForwardLocation(Enemy, DistancePercent)
 
 function AttackTarget(TargetObject, UnitList, ForceAttack)
 {
-	for (D2 in UnitList)
+	for (D in UnitList)
 	{
-		if (UnitList[D2].droidType === DROID_CONSTRUCT ||
-			UnitList[D2].droidType === DROID_CYBORG_CONSTRUCT) continue;
+		if (IsTruck(UnitList[D])) continue;
 		
-		if (!droidCanReach(UnitList[D2], TargetObject.x, TargetObject.y)) continue;
+		if (!droidCanReach(UnitList[D], TargetObject.x, TargetObject.y)) continue;
 		
-		if (AttackUnitBusy(UnitList[D2])) continue;
+		if (UnitList[D].order === DORDER_ATTACK && !ForceAttack) continue;
 		//In range for an attack.
 
 		//Fire on the appropriate type of unit wherever possible.
 		if (!ForceAttack &&
 			TargetObject.type == DROID &&
 			(TargetObject.droidType != DROID_CYBORG &&
-			IsAntiBorg(UnitList[D2])) ||
+			IsAntiBorg(UnitList[D])) ||
 			(TargetObject.droidType == DROID_CYBORG &&
-			IsAntiTank(UnitList[D2])))
+			IsAntiTank(UnitList[D])))
 		{
-			orderDroidLoc(UnitList[D2], DORDER_MOVE, TargetObject.x, TargetObject.y);
+			orderDroidLoc(UnitList[D], DORDER_MOVE, TargetObject.x, TargetObject.y);
 			continue;
 		}
 		
-		if (orderDroidObj(UnitList[D2], DORDER_ATTACK, TargetObject)) continue;
+		if (orderDroidObj(UnitList[D], DORDER_ATTACK, TargetObject)) continue;
 		
-		orderDroidLoc(UnitList[D2], DORDER_MOVE, TargetObject.x, TargetObject.y);
+		orderDroidLoc(UnitList[D], DORDER_MOVE, TargetObject.x, TargetObject.y);
 	}
 }
 
 function WatchForEnemies()
 {
-	var FoundOne = false;
+	if (FastControlPlayer !== null) return;
 	
-	for (var Inc = 0; Inc < maxPlayers; ++Inc)
+	var EnemyDroids = enumRange(startPositions[me].x, startPositions[me].y, MaxWatchingDistance, ENEMIES, true);		
+	
+	if ((EnemyNearBase = (EnemyDroids && EnemyDroids.length > 0)))
 	{
-		if (allianceExistsBetween(me, Inc) || Inc === me) continue;
+		rbdebug("Attacking " + EnemyDroids.length + " nearby enemy droids");
 		
-		var EnemyDroids = enumRange(startPositions[me].x, startPositions[me].y, MaxWatchingDistance, ENEMIES, false);		
+		var Droids = enumDroid(me, DROID_ANY);
+	
+		if (!Droids || !Droids.length) return;
 		
 		for (D in EnemyDroids)
 		{
-			if (EnemyDroids[D].type !== DROID && EnemyDroids[D].type !== STRUCTURE) continue;
-			
-			var Droids = enumDroid(me, DROID_ANY);
-			
-			if (!Droids || !Droids.length || !droidCanReach(Droids[0], EnemyDroids[D].x, EnemyDroids[D].y))
-			{
-				 continue;
-			}
-			
-			FoundOne = true;
 			AttackTarget(EnemyDroids[D], Droids, false);
-			
-			break;
 		}
-		
-		//We don't watch for structures, because that's expensive and we can simply respond to arty attacks.
 	}
-	
-	EnemyNearBase = FoundOne;
 }
 
 function ChooseEnemy(Force)
@@ -546,14 +379,14 @@ function ChooseEnemy(Force)
 		
 		var OurDroids = enumDroid(me, DROID_ANY);
 		
-		if ((EnemyDroids.length || EnemyStructs.length) &&
+		if ((EnemyDroids.length || EnemyStructs.length) && OurDroids && OurDroids.length > 0 &&
 			droidCanReach(OurDroids[0], startPositions[Inc].x, startPositions[Inc].y))
 		{
 			Enemies.push(Inc);
 		}
 	}
 	
-	if (Enemies.length == 0) return null;
+	if (!Enemies.length) return null;
 	
 	
 	//Pick the closest one.
@@ -599,6 +432,8 @@ function enumCriticalStructs(Player)
 
 function PerformAttack()
 {
+	if (FastControlPlayer !== null) return;
+	
 	var Droids = enumDroid(me, DROID_ANY);
 	
 	//Find an enemy to pwn
@@ -1251,12 +1086,13 @@ function WorkOnBase()
 function CheckNeedRecycle()
 {
 	var Droids = enumDroid(me, DROID_ANY);
+	var RecycleCount = 35;
 	
 	if (Droids.length !== 150) return; //Nothing to do.
 	
-	rbdebug("At unit limit. Recycling 10 attack units.");
+	rbdebug("At unit limit. Recycling " + RecycleCount + " attack units.");
 	
-	for (var Dec = Droids.length - 1; Dec >= Droids.length - 11; --Dec)
+	for (var Dec = Droids.length - 1; Dec >= Droids.length - (RecycleCount + 1); --Dec)
 	{
 		if (!IsAttackUnit(Droids[Dec])) continue;
 		
@@ -1497,6 +1333,25 @@ function eventChat(Origin, Target, Msg)
 			donateObject(Trucks[0], Origin);
 			break;
 		}
+		//Easter eggs for you.
+		case "We are the Borg.":
+		case "You will be assimilated.":
+		case "Resistance is futile.":
+		case "Resistance is Futile.":
+		case "We will adapt.":
+		case "Irrelevant.":
+		case "We are Borg.":
+		case "We are Borg":
+		case "Irrelevant. You will be assimilated.":
+		{
+			if (playerData[Origin].isAI)
+			{
+				break;
+			}
+			
+			chat(ALL_PLAYERS, Msg);
+			break;
+		}
 		case "power":
 			donatePower(playerPower(me) / 2, Origin);
 			break;
@@ -1527,9 +1382,9 @@ function eventChat(Origin, Target, Msg)
 function eventAttacked(Target, Attacker)
 {
 	//Account for splash damage
-	if (Attacker.player === me || EnemyNearBase) return;
+	if (Attacker.player === me || EnemyNearBase || FastControlPlayer !== null) return;
 
-	if (Target.type == DROID && Target.health < 60 && NumRepairFacilities() > 0) //60% damage
+	if (Target.type === DROID && Target.health < 60 && NumRepairFacilities() > 0) //60% damage
 	{
 		orderDroid(Target, DORDER_RTR);
 	}

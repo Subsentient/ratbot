@@ -1,6 +1,6 @@
 {
     "AI": {
-        "js": "ratbot.js",
+        "js": "ratbot/personality_cannons.js",
         "name": "RatBot",
         "tip": "RatBot - A very difficult AI for high oil"
     }
