@@ -1317,6 +1317,7 @@ function eventChat(Origin, Target, Msg)
 			break;
 		}
 		case "truck":
+		case "need truck":
 		{
 			var Trucks = enumDroid(me, DROID_CONSTRUCT);
 			
@@ -1353,9 +1354,14 @@ function eventChat(Origin, Target, Msg)
 			break;
 		}
 		case "power":
+		case "need power":
+		case "power?":
+		case "spare power?":
 			donatePower(playerPower(me) / 2, Origin);
 			break;
 		case "go here":
+		case "help me!":
+		case "help me":
 		{
 			if (LastBeaconOrigin !== Origin || LastBeaconX === null || LastBeaconY === null)
 			{
